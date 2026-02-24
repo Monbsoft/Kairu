@@ -329,17 +329,46 @@ Créé à la première session, mis à jour à chaque fin d'itération :
 ## Processus itératif — séquencement strict
 ```
 1. QUESTIONNER    → lever toutes les ambiguïtés, une question à la fois
-2. SPÉCIFIER      → user stories + critères d'acceptance (rôle PM)
-3. MODÉLISER      → bounded context, entités, use cases, boundaries (rôle Architecte)
+2. SPÉCIFIER      → use cases détaillés avec le template standard (voir ci-dessous)
+3. MODÉLISER      → bounded context, entités, use cases, boundaries, diagrammes (rôle Architecte)
 4. VALIDER        → soumettre le plan complet, attendre approbation explicite
 5. IMPLÉMENTER    → Domain d'abord, puis Application, puis Adapters, puis Infrastructure
 6. TESTER         → tests unitaires Use Cases avec presenters bouchonnés
 7. LIVRER         → résumé + dette technique éventuelle
-8. DOCUMENTER     → mise à jour de docs/spec.md ET docs/project-state.md
+8. DOCUMENTER     → mise à jour de docs/spec.md (use cases + diagrammes) ET docs/project-state.md
 ```
 
 On ne passe jamais à l'étape suivante sans validation explicite.
 Le silence n'est pas une validation.
+
+### Template Use Case — étape SPÉCIFIER
+
+```
+### UC-XX — Nom du cas d'utilisation
+
+**Acteur principal :** ...
+**Parties prenantes :** ...
+**Préconditions :** ...
+**Postconditions (succès) :** ...
+
+**Scénario nominal :**
+1. ...
+2. ...
+
+**Scénarios alternatifs :**
+- A1 : ...
+
+**Scénarios d'exception :**
+- E1 : ...
+
+**Critères d'acceptance :**
+- [ ] ...
+```
+
+Les diagrammes Mermaid (séquence, classes, cas d'utilisation) s'insèrent
+dans la spec là où ils apportent de la clarté, sans section dédiée.
+Si le modèle change en cours d'itération, les diagrammes concernés sont mis à jour
+à l'étape DOCUMENTER.
 
 ---
 
