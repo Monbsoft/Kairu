@@ -49,7 +49,11 @@
 - BC Journal (alimenté par les sprints — itération #6)
 
 ### Statut
-🔜 SPÉCIFIER validé — en attente de modélisation (étape 3)
+⚙️ Plan d'implémentation validé — IMPLÉMENTER en cours (étape 5)
+
+### Décisions architecturales
+- ADR-006 : timer côté client (PeriodicTimer Blazor → PATCH complete)
+- ADR-007 : `Kairudev.Adapters` supprimé — ViewModels et presenters non-HTTP dans Application à partir de ce BC
 
 ---
 
@@ -67,6 +71,7 @@
 - Pas de tests d'intégration SQLite (`Kairudev.Infrastructure.Tests` vide)
 - `TaskStatus` : alias `DomainTaskStatus` nécessaire dans les tests (conflit namespace)
 - `DeveloperTask.StartProgress()` codé dans le domaine, pas exposé en UC ni en endpoint
+- `Kairudev.Adapters` à supprimer et fusionner dans Application (ADR-007, fait dès #3)
 
 ---
 

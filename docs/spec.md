@@ -29,10 +29,14 @@ flowchart LR
             UC4(["Supprimer une tâche"])
         end
 
-        subgraph Pomodoro["Bounded Context : Pomodoro (à venir)"]
-            UC5(["Démarrer un sprint"])
-            UC6(["Lier une tâche au sprint"])
-            UC7(["Terminer un sprint"])
+        subgraph Pomodoro["Bounded Context : Pomodoro"]
+            P05(["Configurer les durées"])
+            P06(["Démarrer un sprint"])
+            P07(["Lier une tâche"])
+            P08(["Mettre à jour statut tâche"])
+            P09(["Créer une tâche"])
+            P10(["Interrompre un sprint"])
+            P11(["Terminer un sprint"])
         end
 
         subgraph Journal["Bounded Context : Journal (à venir)"]
@@ -48,9 +52,13 @@ flowchart LR
     Dev --> UC2
     Dev --> UC3
     Dev --> UC4
-    Dev --> UC5
-    Dev --> UC6
-    Dev --> UC7
+    Dev --> P05
+    Dev --> P06
+    Dev --> P07
+    Dev --> P08
+    Dev --> P09
+    Dev --> P10
+    Dev --> P11
     Dev --> UC8
     Dev --> UC9
 ```
@@ -328,29 +336,460 @@ sequenceDiagram
 
 ---
 
-## Bounded Context : Pomodoro (à venir)
+## Bounded Context : Pomodoro
 
-> Use cases à détailler lors de l'itération concernée.
+### Modèle du domaine
 
 ```mermaid
-flowchart LR
-    Dev(["👤 Développeur"])
-    subgraph Pomodoro["Pomodoro"]
-        S1(["Démarrer un sprint"])
-        S2(["Lier une tâche au sprint"])
-        S3(["Terminer un sprint"])
-    end
-    Dev --> S1
-    Dev --> S2
-    Dev --> S3
-    S2 -.->|étend| S1
+classDiagram
+    class PomodoroSession {
+        +PomodoroSessionId Id
+        +PomodoroSessionStatus Status
+        +int PlannedDurationMinutes
+        +DateTime? StartedAt
+        +DateTime? EndedAt
+        +IReadOnlyList~TaskId~ LinkedTaskIds
+        +Create(duration) PomodoroSession
+        +Start(now) Result
+        +Complete(now) Result
+        +Interrupt(now) Result
+        +LinkTask(taskId) Result
+    }
+
+    class PomodoroSessionId {
+        +Guid Value
+        +New() PomodoroSessionId
+        +From(value) PomodoroSessionId
+    }
+
+    class PomodoroSessionStatus {
+        <<enumeration>>
+        Planned
+        Active
+        Completed
+        Interrupted
+    }
+
+    class PomodoroSettings {
+        +int SprintDurationMinutes
+        +int ShortBreakDurationMinutes
+        +int LongBreakDurationMinutes
+        +SprintsBeforeLongBreak = 4
+        +Create(...) Result~PomodoroSettings~
+    }
+
+    class IPomodoroSessionRepository {
+        <<interface>>
+        +AddAsync(session)
+        +GetByIdAsync(id)
+        +GetActiveAsync()
+        +UpdateAsync(session)
+        +GetCompletedTodayCountAsync()
+    }
+
+    class IPomodoroSettingsRepository {
+        <<interface>>
+        +GetAsync()
+        +SaveAsync(settings)
+    }
+
+    PomodoroSession --> PomodoroSessionId : identifié par
+    PomodoroSession --> PomodoroSessionStatus : a le statut
+    PomodoroSession "1" --> "*" TaskId : référence cross-BC
+    IPomodoroSessionRepository ..> PomodoroSession : gère
+    IPomodoroSettingsRepository ..> PomodoroSettings : gère
 ```
 
-**Concepts clés identifiés :**
-- Un **sprint Pomodoro** a une durée fixe (ex. 25 min), un statut, une description libre.
-- Pendant un sprint, le développeur peut lier des tâches (`Tasks`) : les marquer en cours ou les terminer.
-- Un sprint peut couvrir plusieurs tâches ; une tâche peut être travaillée sur plusieurs sprints.
-- Les activités d'un sprint alimentent le **Journal**.
+```mermaid
+stateDiagram-v2
+    [*] --> Planned : Create()
+    Planned --> Active : Start()
+    Active --> Completed : Complete() — déclenché par UI à zéro
+    Active --> Interrupted : Interrupt()
+    Completed --> [*]
+    Interrupted --> [*]
+```
+
+> Règle cross-BC : `PomodoroSession` référence `TaskId` (BC Tasks) par valeur uniquement.
+> Aucun objet `DeveloperTask` ne traverse la frontière du BC.
+
+---
+
+### UC-05 — Configurer les durées Pomodoro
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** —
+**Postconditions (succès) :** les durées sont persistées et effectives au prochain sprint.
+
+**Scénario nominal :**
+1. Le développeur saisit les durées : sprint, pause courte, pause longue.
+2. Le système valide chaque durée (1–120 minutes).
+3. Le système sauvegarde les paramètres.
+
+**Scénarios alternatifs :** —
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant I as SaveSettingsInteractor
+    participant R as IPomodoroSettingsRepository
+    participant P as Presenter
+
+    C->>I: Execute(SaveSettingsRequest)
+    I->>I: PomodoroSettings.Create(sprint, shortBreak, longBreak)
+    alt durée invalide
+        I->>P: PresentValidationError(errors)
+    else valide
+        I->>R: SaveAsync(settings)
+        I->>P: PresentSuccess()
+    end
+    C->>C: return presenter.Result
+```
+
+**Scénarios d'exception :**
+- E1 : une durée < 1 minute → rejetée.
+- E2 : une durée > 120 minutes → rejetée.
+
+**Critères d'acceptance :**
+- [ ] Durées dans [1, 120] → acceptées et persistées
+- [ ] Durée hors plage → rejetée, rien sauvegardé
+- [ ] Les durées sont chargées au démarrage de l'application
+
+---
+
+### UC-06 — Démarrer un sprint
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** aucun sprint `Active` en cours.
+**Postconditions (succès) :** session créée au statut `Active`, durée configurée stockée dans la session.
+
+**Scénario nominal :**
+1. Le développeur demande le démarrage d'un sprint.
+2. Le système vérifie qu'aucun sprint n'est déjà actif.
+3. Le système lit la durée configurée.
+4. Le système crée la session et la passe à `Active`.
+5. Le système retourne la session avec sa durée pour lancer le chrono côté UI.
+
+**Scénarios alternatifs :** —
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant I as StartSessionInteractor
+    participant SR as IPomodoroSessionRepository
+    participant SS as IPomodoroSettingsRepository
+    participant S as PomodoroSession
+    participant P as Presenter
+
+    C->>I: Execute(StartSessionRequest)
+    I->>SR: GetActiveAsync()
+    alt sprint déjà actif
+        SR-->>I: session
+        I->>P: PresentFailure(SessionAlreadyActive)
+    else aucun sprint actif
+        SR-->>I: null
+        I->>SS: GetAsync()
+        SS-->>I: settings
+        I->>S: PomodoroSession.Create(settings.SprintDurationMinutes)
+        I->>S: Start(now)
+        S-->>I: Result.Success
+        I->>SR: AddAsync(session)
+        I->>P: PresentSuccess(PomodoroSessionViewModel)
+    end
+    C->>C: return presenter.Result
+```
+
+**Scénarios d'exception :**
+- E1 : un sprint est déjà `Active` → erreur, aucune session créée.
+
+**Critères d'acceptance :**
+- [ ] Session créée avec statut `Active`
+- [ ] `StartedAt` renseigné
+- [ ] `PlannedDurationMinutes` = durée configurée au moment du démarrage
+- [ ] Deux sprints simultanés impossibles
+
+---
+
+### UC-07 — Lier une tâche au sprint
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** sprint `Active`, tâche identifiée existe, non déjà liée.
+**Postconditions (succès) :** le `TaskId` est ajouté à `LinkedTaskIds` de la session.
+
+**Scénario nominal :**
+1. Le développeur désigne une tâche à lier au sprint actif.
+2. Le système vérifie qu'un sprint est actif.
+3. Le système vérifie que la tâche existe.
+4. Le système lie la tâche au sprint.
+
+**Scénarios alternatifs :** —
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant I as LinkTaskInteractor
+    participant SR as IPomodoroSessionRepository
+    participant TR as ITaskRepository
+    participant S as PomodoroSession
+    participant P as Presenter
+
+    C->>I: Execute(LinkTaskRequest)
+    I->>SR: GetActiveAsync()
+    alt aucun sprint actif
+        SR-->>I: null
+        I->>P: PresentFailure(NoActiveSession)
+    else sprint actif
+        SR-->>I: session
+        I->>TR: GetByIdAsync(taskId)
+        alt tâche introuvable
+            TR-->>I: null
+            I->>P: PresentNotFound()
+        else tâche trouvée
+            TR-->>I: task
+            I->>S: LinkTask(taskId)
+            alt déjà liée
+                S-->>I: Result.Failure
+                I->>P: PresentFailure(TaskAlreadyLinked)
+            else succès
+                S-->>I: Result.Success
+                I->>SR: UpdateAsync(session)
+                I->>P: PresentSuccess()
+            end
+        end
+    end
+    C->>C: return presenter.Result
+```
+
+**Scénarios d'exception :**
+- E1 : aucun sprint actif → erreur.
+- E2 : tâche introuvable → `NotFound`.
+- E3 : tâche déjà liée → erreur métier.
+
+**Critères d'acceptance :**
+- [ ] `TaskId` présent dans `LinkedTaskIds` après liaison
+- [ ] Liaison dupliquée rejetée
+- [ ] Tâche inexistante → rejetée
+
+---
+
+### UC-08 — Mettre à jour le statut d'une tâche depuis le sprint
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** sprint `Active`, tâche liée au sprint.
+**Postconditions (succès) :** statut de la tâche mis à jour (`InProgress` ou `Done`).
+
+**Scénario nominal :**
+1. Le développeur choisit une tâche liée et le nouveau statut.
+2. Le système vérifie qu'un sprint est actif.
+3. Le système vérifie que la tâche est liée au sprint.
+4. Le système met à jour le statut de la tâche.
+
+**Scénarios alternatifs :** —
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant I as UpdateTaskStatusInteractor
+    participant SR as IPomodoroSessionRepository
+    participant TR as ITaskRepository
+    participant T as DeveloperTask
+    participant P as Presenter
+
+    C->>I: Execute(UpdateTaskStatusRequest)
+    I->>SR: GetActiveAsync()
+    alt aucun sprint actif
+        SR-->>I: null
+        I->>P: PresentFailure(NoActiveSession)
+    else sprint actif
+        SR-->>I: session
+        alt taskId absent de LinkedTaskIds
+            I->>P: PresentFailure(TaskNotLinked)
+        else tâche liée
+            I->>TR: GetByIdAsync(taskId)
+            TR-->>I: task
+            I->>T: StartProgress() ou Complete()
+            T-->>I: Result
+            I->>TR: UpdateAsync(task)
+            I->>P: PresentSuccess(TaskViewModel)
+        end
+    end
+    C->>C: return presenter.Result
+```
+
+**Scénarios d'exception :**
+- E1 : aucun sprint actif → erreur.
+- E2 : tâche non liée au sprint → erreur.
+- E3 : transition invalide (ex. `Done → InProgress`) → erreur métier.
+
+**Critères d'acceptance :**
+- [ ] `Pending → InProgress` accepté
+- [ ] `InProgress → Done` accepté
+- [ ] Rétrogradation depuis `Done` rejetée
+- [ ] Tâche non liée au sprint → rejetée
+
+---
+
+### UC-09 — Créer une tâche pendant un sprint
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** sprint `Active`.
+**Postconditions (succès) :** tâche créée (`Pending`), automatiquement liée au sprint actif.
+
+**Scénario nominal :**
+1. Le développeur saisit un titre de tâche depuis l'écran du sprint.
+2. Le système vérifie qu'un sprint est actif.
+3. Le système valide le titre.
+4. Le système crée la tâche et la lie au sprint.
+
+**Scénarios alternatifs :** —
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant I as CreateTaskDuringSessionInteractor
+    participant SR as IPomodoroSessionRepository
+    participant TR as ITaskRepository
+    participant S as PomodoroSession
+    participant P as Presenter
+
+    C->>I: Execute(CreateTaskDuringSessionRequest)
+    I->>SR: GetActiveAsync()
+    alt aucun sprint actif
+        SR-->>I: null
+        I->>P: PresentFailure(NoActiveSession)
+    else sprint actif
+        SR-->>I: session
+        I->>I: TaskTitle.Create(title)
+        alt titre invalide
+            I->>P: PresentValidationError(errors)
+        else valide
+            I->>TR: DeveloperTask.Create(title, now)
+            I->>TR: AddAsync(task)
+            I->>S: LinkTask(task.Id)
+            I->>SR: UpdateAsync(session)
+            I->>P: PresentSuccess(TaskViewModel)
+        end
+    end
+    C->>C: return presenter.Result
+```
+
+**Scénarios d'exception :**
+- E1 : aucun sprint actif → erreur.
+- E2 : titre vide ou > 200 caractères → erreur de validation.
+
+**Critères d'acceptance :**
+- [ ] Tâche créée dans le BC Tasks avec statut `Pending`
+- [ ] `TaskId` présent dans `LinkedTaskIds` du sprint
+- [ ] Sprint non actif → rejeté
+
+---
+
+### UC-10 — Interrompre un sprint
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** sprint `Active`.
+**Postconditions (succès) :** session passe à `Interrupted`, `EndedAt` renseigné, aucune pause lancée.
+
+**Scénario nominal :**
+1. Le développeur demande l'interruption du sprint en cours.
+2. Le système vérifie qu'un sprint est actif.
+3. Le système passe la session à `Interrupted` et enregistre `EndedAt`.
+
+**Scénarios alternatifs :** —
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant I as InterruptSessionInteractor
+    participant R as IPomodoroSessionRepository
+    participant S as PomodoroSession
+    participant P as Presenter
+
+    C->>I: Execute(InterruptSessionRequest)
+    I->>R: GetActiveAsync()
+    alt aucun sprint actif
+        R-->>I: null
+        I->>P: PresentFailure(NoActiveSession)
+    else sprint actif
+        R-->>I: session
+        I->>S: Interrupt(now)
+        S-->>I: Result.Success
+        I->>R: UpdateAsync(session)
+        I->>P: PresentSuccess()
+    end
+    C->>C: return presenter.Result
+```
+
+**Scénarios d'exception :**
+- E1 : aucun sprint actif → erreur.
+
+**Critères d'acceptance :**
+- [ ] Statut `Interrupted`, `EndedAt` renseigné
+- [ ] Aucune pause démarrée
+- [ ] Sprint interrompu comptabilisé séparément des sprints complétés
+
+---
+
+### UC-11 — Terminer un sprint
+
+**Acteur principal :** Système (UI Blazor — chrono à zéro)
+**Parties prenantes :** Développeur (reçoit le signal de pause)
+**Préconditions :** sprint `Active`.
+**Postconditions (succès) :** session `Completed`, `EndedAt` renseigné, type de pause calculé et retourné.
+
+**Scénario nominal :**
+1. Le chrono UI atteint zéro.
+2. L'UI appelle l'endpoint de complétion.
+3. Le système vérifie qu'un sprint est actif.
+4. Le système passe la session à `Completed` et enregistre `EndedAt`.
+5. Le système compte les sprints complétés aujourd'hui.
+6. Le système retourne le type de pause (courte ou longue) et sa durée.
+
+**Scénarios alternatifs :**
+- A1 : `count % 4 == 0` → pause longue. Sinon → pause courte.
+
+```mermaid
+sequenceDiagram
+    participant UI as Blazor (PeriodicTimer)
+    participant C as Controller
+    participant I as CompleteSessionInteractor
+    participant R as IPomodoroSessionRepository
+    participant S as PomodoroSession
+    participant P as Presenter
+
+    UI->>C: PATCH /sessions/{id}/complete
+    C->>I: Execute(CompleteSessionRequest)
+    I->>R: GetActiveAsync()
+    alt aucun sprint actif
+        R-->>I: null
+        I->>P: PresentFailure(NoActiveSession)
+    else sprint actif
+        R-->>I: session
+        I->>S: Complete(now)
+        S-->>I: Result.Success
+        I->>R: UpdateAsync(session)
+        I->>R: GetCompletedTodayCountAsync()
+        R-->>I: count
+        note over I: count % 4 == 0 → pause longue\nsinon → pause courte
+        I->>P: PresentSuccess(breakType, breakDurationMinutes)
+    end
+    C->>C: return presenter.Result
+```
+
+**Scénarios d'exception :**
+- E1 : aucun sprint actif (incohérence UI) → erreur ignorée côté UI.
+
+**Critères d'acceptance :**
+- [ ] Statut `Completed`, `EndedAt` renseigné
+- [ ] Après 4 complétés → pause longue, sinon pause courte
+- [ ] Durée de pause = valeur configurée correspondante
+- [ ] Le compteur ne tient compte que des sessions `Completed` du jour courant
 
 ---
 
@@ -394,3 +833,13 @@ flowchart LR
 - **Contexte :** Cible multi-UI, partage futur de composants avec MAUI via Blazor Hybrid.
 - **Décision :** Blazor WASM standalone, communication uniquement via API REST. `TaskDto` défini dans le projet Web.
 - **Conséquences :** Projet Web totalement découplé du backend.
+
+### ADR-006 — Timer côté client
+- **Contexte :** La fin de sprint doit être automatique ; pas d'infrastructure serveur temps-réel.
+- **Décision :** Le chrono tourne dans Blazor WASM (`PeriodicTimer` C#). À zéro, le client appelle `PATCH /api/pomodoro/sessions/{id}/complete`. Le serveur ne maintient aucun état de chrono.
+- **Conséquences :** Architecture simple, sans WebSocket ni SignalR. Si l'onglet est fermé pendant un sprint, la session reste `Active` — acceptable pour v1.
+
+### ADR-007 — Fusion Adapters dans Application
+- **Contexte :** Le projet `Kairudev.Adapters` ne contient que des presenters génériques peu utilisés ; les presenters HTTP vivent déjà dans `Kairudev.Api`.
+- **Décision :** À partir du BC Pomodoro, `Kairudev.Adapters` est supprimé. Les ViewModels et les presenters non-HTTP vivent dans `Kairudev.Application`. Les presenters HTTP restent dans `Kairudev.Api`.
+- **Conséquences :** Solution simplifiée (un projet de moins). Le BC Tasks sera refactorisé en dette technique.
