@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Kairudev.Application\Kairudev.Application.csproj" />
     <ProjectReference Include="..\Kairudev.Adapters\Kairudev.Adapters.csproj" />
     <ProjectReference Include="..\Kairudev.Infrastructure\Kairudev.Infrastructure.csproj" />
+    <ProjectReference Include="..\Kairudev.ServiceDefaults\Kairudev.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Kairudev.Api/Kairudev.Api.csproj">
+      <IsAspireProjectResource>true</IsAspireProjectResource>
+    </ProjectReference>
+    <ProjectReference Include="../Kairudev.Web/Kairudev.Web.csproj">
+      <IsAspireProjectResource>true</IsAspireProjectResource>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

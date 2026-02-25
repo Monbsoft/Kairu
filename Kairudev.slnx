@@ -2,9 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/Kairudev.Adapters/Kairudev.Adapters.csproj" />
     <Project Path="src/Kairudev.Api/Kairudev.Api.csproj" />
+    <Project Path="src/Kairudev.AppHost/Kairudev.AppHost.csproj" />
     <Project Path="src/Kairudev.Application/Kairudev.Application.csproj" />
     <Project Path="src/Kairudev.Domain/Kairudev.Domain.csproj" />
     <Project Path="src/Kairudev.Infrastructure/Kairudev.Infrastructure.csproj" />
+    <Project Path="src/Kairudev.ServiceDefaults/Kairudev.ServiceDefaults.csproj" />
     <Project Path="src/Kairudev.Web/Kairudev.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">

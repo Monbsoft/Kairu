@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? "Data Source=kairudev.db";
 
@@ -33,5 +35,6 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.UseHttpsRedirection();
 app.MapControllers();
+app.MapDefaultEndpoints();
 
 app.Run();
