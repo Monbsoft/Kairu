@@ -16,6 +16,7 @@
 | ~~#3b~~ | ~~.NET Aspire 13.1.1 — AppHost + ServiceDefaults~~ | ~~✅ Livré~~ | ~~2026-02-25~~ |
 | ~~#4~~ | ~~Tests d'intégration SQLite (`Kairudev.Infrastructure.Tests`)~~ | ~~✅ Livré~~ | ~~2026-02-25~~ |
 | ~~#5~~ | ~~Configuration externalisée — URL API via `appsettings.json`~~ | ~~✅ Livré~~ | ~~2026-02-25~~ |
+| ~~#5b~~ | ~~Bugfixes (NetworkError + CreatedAtAction) + sous-agents Claude + UC-12 ChangeTaskStatus~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
 | #6 | BC Journal — log d'activité quotidien alimenté par les sprints | 📋 Planifié | — |
 | #7 | BC Tickets — intégration Jira / Linear / GitHub Issues | 📋 Planifié | — |
 | #8 | .NET MAUI — application desktop/mobile | 📋 Planifié | — |
@@ -24,27 +25,30 @@
 
 ## Dernière itération livrée
 
-**#4 + #5 — Tests intégration SQLite + Config externalisée** — Livré le 2026-02-25
+**#5b — Bugfixes + sous-agents + UC-12 ChangeTaskStatus** — Livré le 2026-02-26
 
 ### Ce qui a été livré
 
-#### #4 — Tests d'intégration SQLite
-- **`InfrastructureTestBase`** : helper SQLite in-memory (`DataSource=:memory:`), schéma créé via `EnsureCreated()`
-- **`SqliteTaskRepositoryTests`** : 6 tests (Add, GetById, GetAll vide, GetAll multiple, Update, Delete)
-- **`SqlitePomodoroSessionRepositoryTests`** : 7 tests (Add, GetById NotFound, GetActive, GetActive None, Update, CompletedTodayCount, LinkedTask)
-- **`SqlitePomodoroSettingsRepositoryTests`** : 3 tests (Defaults, Save, Update)
-- **`Kairudev.Infrastructure.csproj`** : `InternalsVisibleTo` pour Kairudev.Infrastructure.Tests
-- **Total : 72 tests** (35 Domain + 20 Application + 17 Infrastructure), 0 échec
+#### Bugfixes
+- **NetworkError Blazor WASM** : `ApiBaseUrl` corrigé → `http://localhost:5205` (Aspire utilise le profil HTTP)
+- **`CreatedAtActionResult("GetById")`** : remplacé par `CreatedResult($"api/tasks/{id}")` (action inexistante)
 
-#### #5 — Configuration externalisée URL API
-- **`src/Kairudev.Web/wwwroot/appsettings.json`** : clé `ApiBaseUrl` (valeur dev par défaut)
-- **`src/Kairudev.Web/Program.cs`** : lit `builder.Configuration["ApiBaseUrl"]` (fallback `https://localhost:7056`)
-- L'URL n'est plus hardcodée dans le code source
+#### Sous-agents Claude Code
+- **`.claude/agents/pm.md`** : agent Product Manager (outils : Read, Glob, Grep)
+- **`.claude/agents/arch.md`** : agent Architecte (outils : Read, Glob, Grep, Write, Edit)
+- **`.claude/agents/dev.md`** : agent Développeur (outils : Read, Glob, Grep, Write, Edit, Bash)
+
+#### UC-12 — Changer le statut d'une tâche
+- **Domain** : `DeveloperTask.ChangeStatus(TaskStatus, DateTime)` + `DomainErrors.Tasks.SameStatus`
+- **Application** : `ChangeTaskStatus/` — Request, IUseCase, IPresenter, Interactor
+- **API** : `PATCH api/tasks/{id}/status` + `ChangeTaskStatusHttpPresenter` + action dans `TasksController`
+- **Tests** : +17 tests (9 Domain + 8 Application)
+- **Total : 89 tests** (44 Domain + 28 Application + 17 Infrastructure), 0 échec
 
 ### Dette technique héritée et courante
 - `TaskStatus` : alias `DomainTaskStatus` nécessaire dans les tests (conflit namespace)
 - `DomainErrors` : alias `PomodoroErrors` nécessaire quand Tasks et Pomodoro sont tous deux importés
-- `DeveloperTask.StartProgress()` codé dans le domaine, pas exposé en UC ni en endpoint
+- `DeveloperTask.StartProgress()` redondant avec `ChangeStatus(InProgress, now)` — à supprimer dans un refactoring futur
 - `Kairudev.Adapters` : projet toujours présent dans la solution mais vide de sens (suppression à planifier)
 
 ---

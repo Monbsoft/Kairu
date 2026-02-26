@@ -27,6 +27,7 @@ flowchart LR
             UC2(["Lister les tâches"])
             UC3(["Compléter une tâche"])
             UC4(["Supprimer une tâche"])
+            UC12(["Changer le statut"])
         end
 
         subgraph Pomodoro["Bounded Context : Pomodoro"]
@@ -39,8 +40,12 @@ flowchart LR
             P11(["Terminer un sprint"])
         end
 
-        subgraph Journal["Bounded Context : Journal (à venir)"]
-            UC8(["Consulter le journal du jour"])
+        subgraph Journal["Bounded Context : Journal"]
+            UC13(["Consulter le journal du jour"])
+            UC14(["Ajouter un commentaire"])
+            UC15(["Modifier un commentaire"])
+            UC16(["Supprimer un commentaire"])
+            UCS1(["Générer une entrée (Système)"])
         end
 
         subgraph Tickets["Bounded Context : Tickets (à venir)"]
@@ -52,6 +57,7 @@ flowchart LR
     Dev --> UC2
     Dev --> UC3
     Dev --> UC4
+    Dev --> UC12
     Dev --> P05
     Dev --> P06
     Dev --> P07
@@ -59,7 +65,11 @@ flowchart LR
     Dev --> P09
     Dev --> P10
     Dev --> P11
-    Dev --> UC8
+    Dev --> UC13
+    Dev --> UC14
+    Dev --> UC15
+    Dev --> UC16
+    Système --> UCS1
     Dev --> UC9
 ```
 
@@ -115,6 +125,7 @@ classDiagram
         +Create(title, createdAt) DeveloperTask
         +Complete() Result
         +StartProgress() Result
+        +ChangeStatus(newStatus, now) Result
     }
 
     class TaskId {
@@ -333,6 +344,69 @@ sequenceDiagram
 **Critères d'acceptance :**
 - [x] La tâche n'existe plus après suppression
 - [x] Identifiant inexistant → `NotFound`
+
+### UC-12 — Changer le statut d'une tâche
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** la tâche identifiée existe.
+**Postconditions (succès) :** le statut est mis à jour, `CompletedAt` ajusté, modification persistée.
+
+**Scénario nominal :**
+1. Le développeur désigne une tâche (par id) et le nouveau statut souhaité.
+2. Le système vérifie que la valeur de statut est reconnue (`Pending`, `InProgress`, `Done`).
+3. Le système vérifie que la tâche existe.
+4. Le système vérifie que le nouveau statut est différent du statut actuel.
+5. Le système applique la transition.
+6. Si `→ Done` : `CompletedAt = now`. Si `Done →` autre : `CompletedAt = null`.
+7. Le système persiste la modification et retourne la tâche mise à jour.
+
+**Scénarios d'exception :**
+- E1 : valeur de statut non reconnue → `400 Bad Request`.
+- E2 : tâche introuvable → `404 Not Found`.
+- E3 : statut identique au statut actuel → `409 Conflict` (erreur métier `SameStatus`).
+
+```mermaid
+sequenceDiagram
+    participant C as TasksController
+    participant P as ChangeTaskStatusHttpPresenter
+    participant I as ChangeTaskStatusInteractor
+    participant R as ITaskRepository
+    participant T as DeveloperTask
+
+    C->>I: Execute(ChangeTaskStatusRequest(id, "InProgress"))
+    I->>I: Enum.TryParse(newStatus)
+    alt valeur non reconnue
+        I->>P: PresentValidationError("Unknown status")
+    else valeur reconnue
+        I->>R: GetByIdAsync(id)
+        alt tâche introuvable
+            R-->>I: null
+            I->>P: PresentNotFound()
+        else tâche trouvée
+            R-->>I: task
+            I->>T: ChangeStatus(newStatus, now)
+            alt même statut
+                T-->>I: Result.Failure(SameStatus)
+                I->>P: PresentFailure(reason)
+            else transition valide
+                T-->>I: Result.Success
+                I->>R: UpdateAsync(task)
+                I->>P: PresentSuccess(TaskViewModel)
+            end
+        end
+    end
+    C->>C: return presenter.Result
+```
+
+**Critères d'acceptance :**
+- [x] Les 6 transitions valides acceptées (`Pending ↔ InProgress ↔ Done`)
+- [x] `* → Done` : `CompletedAt` renseigné
+- [x] `Done → *` : `CompletedAt` remis à `null`
+- [x] Transition identique → `409 Conflict` (`SameStatus`)
+- [x] Tâche inexistante → `404 Not Found`
+- [x] Valeur de statut non reconnue → `400 Bad Request`
+- [x] Persistée et reflétée dans `ListTasks`
 
 ---
 

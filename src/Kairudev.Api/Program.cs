@@ -1,3 +1,5 @@
+using Kairudev.Application.Journal.CreateJournalEntry;
+using Kairudev.Domain.Journal;
 using Kairudev.Infrastructure;
 using Kairudev.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,13 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? "Data Source=kairudev.db";
 
 builder.Services.AddInfrastructure(connectionString);
+
+// Journal — ICreateJournalEntryUseCase avec NoOpPresenter (usage interne par les autres interactors)
+builder.Services.AddScoped<ICreateJournalEntryUseCase>(sp =>
+    new CreateJournalEntryInteractor(
+        sp.GetRequiredService<IJournalEntryRepository>(),
+        new NoOpJournalEntryPresenter()));
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
