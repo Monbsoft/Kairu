@@ -39,4 +39,38 @@ Content-Type: application/json
   "description": null
 }
 
+### GET Pomodoro Settings
+GET {{Kairudev.Api_HostAddress}}/api/pomodoro/settings
+Accept: application/json
+
+### PUT Save Pomodoro Settings (custom durations)
+PUT {{Kairudev.Api_HostAddress}}/api/pomodoro/settings
+Content-Type: application/json
+
+{
+  "sprintDurationMinutes": 30,
+  "shortBreakDurationMinutes": 7,
+  "longBreakDurationMinutes": 20
+}
+
+### PUT Save Pomodoro Settings (reset to defaults)
+PUT {{Kairudev.Api_HostAddress}}/api/pomodoro/settings
+Content-Type: application/json
+
+{
+  "sprintDurationMinutes": 25,
+  "shortBreakDurationMinutes": 5,
+  "longBreakDurationMinutes": 15
+}
+
+### PUT Save Pomodoro Settings (validation error - sprint too long)
+PUT {{Kairudev.Api_HostAddress}}/api/pomodoro/settings
+Content-Type: application/json
+
+{
+  "sprintDurationMinutes": 150,
+  "shortBreakDurationMinutes": 5,
+  "longBreakDurationMinutes": 15
+}
+
 ###

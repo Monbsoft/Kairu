@@ -605,9 +605,10 @@ sequenceDiagram
 - E2 : une durée > 120 minutes → rejetée.
 
 **Critères d'acceptance :**
-- [ ] Durées dans [1, 120] → acceptées et persistées
-- [ ] Durée hors plage → rejetée, rien sauvegardé
-- [ ] Les durées sont chargées au démarrage de l'application
+- [x] Durées dans [1, 120] → acceptées et persistées
+- [x] Durée hors plage → rejetée, rien sauvegardé
+- [x] Les durées sont chargées au démarrage de l'application
+- [x] UI dédiée pour modifier les paramètres (/settings)
 
 ---
 

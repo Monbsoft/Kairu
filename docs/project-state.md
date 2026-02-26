@@ -7,14 +7,17 @@
 
 ## Résumé état actuel
 
-**Dernière itération : #5e — UI Blazor pour description et modification de tâches** (2026-02-26)
+**Dernière itération : #6 — UC-05 (Pomodoro) Configurer les durées** (2026-02-26)
 
 **Bounded Contexts opérationnels :**
 - **Tasks** : 6 use cases (Add, List, Complete, Delete, Update, ChangeStatus) — **UI complète** ✅
-- **Pomodoro** : 7 use cases (sprints complets avec lien aux tâches)
+- **Pomodoro** : 8 use cases — **UC-05 SaveSettings implémenté** ✅
+  - Démarrer/Terminer/Interrompre sprint
+  - Lier tâche, Créer tâche, Mettre à jour statut
+  - **Configurer les durées (sprint, pause courte, pause longue)** ✅
 - **Journal** : 5 use cases (consultation, ajout/modification/suppression commentaires)
 
-**Tests :** 141 au total (71 Domain + 53 Application + 17 Infrastructure), tous au vert ✅
+**Tests :** 154 au total (71 Domain + 66 Application + 17 Infrastructure), tous au vert ✅
 
 **Infrastructure :** API REST, Blazor WASM, SQLite + EF Core, .NET Aspire orchestration
 
@@ -37,13 +40,56 @@
 | ~~#5c~~ | ~~UC-05 UpdateTask + Description optionnelle sur les tâches~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
 | ~~#5d~~ | ~~Correctif migration EF Core — AddTaskDescription~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
 | ~~#5e~~ | ~~UI Blazor — Description et modification de tâches~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
-| #6 | BC Journal — log d'activité quotidien alimenté par les sprints | 📋 Planifié | — |
-| #7 | BC Tickets — intégration Jira / Linear / GitHub Issues | 📋 Planifié | — |
-| #8 | .NET MAUI — application desktop/mobile | 📋 Planifié | — |
+| ~~#6~~ | ~~UC-05 (Pomodoro) — Configurer les durées (sprint, pause courte/longue)~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
+| #7 | BC Journal — log d'activité quotidien alimenté par les sprints | 📋 Planifié | — |
+| #8 | BC Tickets — intégration Jira / Linear / GitHub Issues | 📋 Planifié | — |
+| #9 | .NET MAUI — application desktop/mobile | 📋 Planifié | — |
 
 ---
 
 ## Dernière itération livrée
+
+**#6 — UC-05 (Pomodoro) — Configurer les durées** — Livré le 2026-02-26
+
+### Ce qui a été livré
+
+#### Problème
+L'utilisateur n'avait aucun moyen de personnaliser les durées des sprints Pomodoro. Les valeurs par défaut (25 min sprint, 5 min pause courte, 15 min pause longue) étaient codées en dur.
+
+#### Solution appliquée
+
+**Tests Application** : `SaveSettingsInteractorTests` (+13 tests)
+- Validation des durées dans la plage [1-120] minutes
+- Test des valeurs minimales et maximales
+- Test de réécriture des paramètres existants
+- Test des erreurs de validation pour chaque champ
+
+**API** : Endpoint existant `PUT /api/pomodoro/settings`
+- Déjà implémenté dans `PomodoroController`
+- `SaveSettingsHttpPresenter` gère la réponse (204 NoContent / 400 BadRequest)
+
+**Blazor UI** : Nouvelle page `/settings`
+- Formulaire avec 3 champs numériques (sprint, pause courte, pause longue)
+- Validation côté client et serveur (1-120 minutes)
+- Bouton "Réinitialiser" pour revenir aux valeurs par défaut
+- Affichage des messages de succès/erreur
+- Ajout du lien "⚙ Paramètres" dans le menu de navigation
+
+**Tests** : 154 tests au total (71 Domain + 66 Application + 17 Infrastructure), 0 échec ✅
+
+### Impact
+- L'utilisateur peut maintenant personnaliser les durées Pomodoro selon ses préférences
+- Les durées sont persistées dans SQLite et réutilisées à chaque démarrage de sprint
+- UC-05 (Pomodoro) est maintenant complètement implémenté et testé
+- Ajout de 13 tests Application pour couvrir tous les scénarios de validation
+
+### Captures d'écran (UI)
+- Page `/settings` : formulaire avec 3 champs + boutons Enregistrer/Réinitialiser
+- Menu de navigation : nouvel item "⚙ Paramètres"
+
+---
+
+## Itération #5e (précédente)
 
 **#5e — UI Blazor pour description et modification de tâches** — Livré le 2026-02-26
 

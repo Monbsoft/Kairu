@@ -1,0 +1,145 @@
+@page "/settings"
+@using Kairudev.Web.Services
+@inject PomodoroApiClient PomodoroApi
+
+<h2>Paramètres Pomodoro</h2>
+
+@if (!_loaded)
+{
+    <p>Chargement…</p>
+}
+else
+{
+    <div style="max-width: 500px">
+        <EditForm Model="_form" OnValidSubmit="SaveSettings">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label class="form-label">Durée du sprint (minutes)</label>
+                <input type="number" class="form-control" @bind="_form.SprintDuration" min="1" max="120" />
+                <div class="form-text">Entre 1 et 120 minutes. Valeur par défaut : 25 minutes.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Durée de la pause courte (minutes)</label>
+                <input type="number" class="form-control" @bind="_form.ShortBreakDuration" min="1" max="120" />
+                <div class="form-text">Entre 1 et 120 minutes. Valeur par défaut : 5 minutes.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Durée de la pause longue (minutes)</label>
+                <input type="number" class="form-control" @bind="_form.LongBreakDuration" min="1" max="120" />
+                <div class="form-text">Entre 1 et 120 minutes. Valeur par défaut : 15 minutes.</div>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>ℹ️ Rappel :</strong> Une pause longue est recommandée tous les 4 sprints.
+            </div>
+
+            @if (_successMessage is not null)
+            {
+                <div class="alert alert-success">
+                    ✓ @_successMessage
+                </div>
+            }
+
+            @if (_errorMessage is not null)
+            {
+                <div class="alert alert-danger">
+                    ⚠ @_errorMessage
+                </div>
+            }
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" disabled="@_saving">
+                    @(_saving ? "Enregistrement…" : "Enregistrer")
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="ResetToDefaults" disabled="@_saving">
+                    Réinitialiser
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private bool _loaded;
+    private bool _saving;
+    private string? _successMessage;
+    private string? _errorMessage;
+    private SettingsForm _form = new();
+
+    private sealed class SettingsForm
+    {
+        public int SprintDuration { get; set; } = 25;
+        public int ShortBreakDuration { get; set; } = 5;
+        public int LongBreakDuration { get; set; } = 15;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await PomodoroApi.GetSettingsAsync();
+        if (settings is not null)
+        {
+            _form.SprintDuration = settings.SprintDurationMinutes;
+            _form.ShortBreakDuration = settings.ShortBreakDurationMinutes;
+            _form.LongBreakDuration = settings.LongBreakDurationMinutes;
+        }
+        _loaded = true;
+    }
+
+    private async Task SaveSettings()
+    {
+        _saving = true;
+        _successMessage = null;
+        _errorMessage = null;
+
+        try
+        {
+            if (_form.SprintDuration < 1 || _form.SprintDuration > 120)
+            {
+                _errorMessage = "La durée du sprint doit être entre 1 et 120 minutes.";
+                return;
+            }
+
+            if (_form.ShortBreakDuration < 1 || _form.ShortBreakDuration > 120)
+            {
+                _errorMessage = "La durée de la pause courte doit être entre 1 et 120 minutes.";
+                return;
+            }
+
+            if (_form.LongBreakDuration < 1 || _form.LongBreakDuration > 120)
+            {
+                _errorMessage = "La durée de la pause longue doit être entre 1 et 120 minutes.";
+                return;
+            }
+
+            var success = await PomodoroApi.SaveSettingsAsync(
+                _form.SprintDuration,
+                _form.ShortBreakDuration,
+                _form.LongBreakDuration);
+
+            if (success)
+            {
+                _successMessage = "Paramètres enregistrés avec succès !";
+            }
+            else
+            {
+                _errorMessage = "Impossible d'enregistrer les paramètres. Vérifiez les valeurs saisies.";
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void ResetToDefaults()
+    {
+        _form.SprintDuration = 25;
+        _form.ShortBreakDuration = 5;
+        _form.LongBreakDuration = 15;
+        _successMessage = null;
+        _errorMessage = null;
+    }
+}
