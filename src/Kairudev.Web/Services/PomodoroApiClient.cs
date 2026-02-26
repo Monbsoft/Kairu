@@ -31,6 +31,13 @@ public sealed class PomodoroApiClient
 
     // ── Session ────────────────────────────────────────────────────────────
 
+    public async Task<SuggestedSessionTypeDto?> GetSuggestedSessionTypeAsync()
+    {
+        var response = await _http.GetAsync("api/pomodoro/session/suggested");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<SuggestedSessionTypeDto>();
+    }
+
     public async Task<PomodoroSessionDto?> GetCurrentSessionAsync()
     {
         var response = await _http.GetAsync("api/pomodoro/session");
@@ -39,9 +46,12 @@ public sealed class PomodoroApiClient
         return await response.Content.ReadFromJsonAsync<PomodoroSessionDto>();
     }
 
-    public async Task<PomodoroSessionDto?> StartSessionAsync()
+    public async Task<PomodoroSessionDto?> StartSessionAsync(string? sessionType = null)
     {
-        var response = await _http.PostAsync("api/pomodoro/session", null);
+        var url = string.IsNullOrEmpty(sessionType) 
+            ? "api/pomodoro/session" 
+            : $"api/pomodoro/session?type={sessionType}";
+        var response = await _http.PostAsync(url, null);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<PomodoroSessionDto>();
     }

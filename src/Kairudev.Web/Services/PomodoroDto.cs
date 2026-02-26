@@ -8,6 +8,7 @@ public sealed record PomodoroSettingsDto(
 
 public sealed record PomodoroSessionDto(
     Guid Id,
+    string SessionType,
     string Status,
     int PlannedDurationMinutes,
     DateTime? StartedAt,
@@ -17,3 +18,9 @@ public sealed record PomodoroSessionDto(
 public sealed record PomodoroCompleteResultDto(
     string BreakType,
     int BreakDurationMinutes);
+
+public sealed record SuggestedSessionTypeDto(
+    string SuggestedType,
+    int SprintDurationMinutes,
+    int ShortBreakDurationMinutes,
+    int LongBreakDurationMinutes);
