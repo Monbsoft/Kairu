@@ -1,7 +1,8 @@
 // Published service worker — caches Blazor WASM assets for fast load
 // Auto-updated by Blazor publish pipeline via service-worker-assets.js
 
-const cacheName = 'kairudev-cache-v1';
+const cacheNamePrefix = 'kairudev-cache-';
+const cacheName = cacheNamePrefix + (self.assetsManifest?.version ?? 'v1');
 const offlineAssetsInclude = [/\.dll$/, /\.wasm$/, /\.html$/, /\.js$/, /\.json$/, /\.css$/, /\.png$/, /\.mp3$/];
 
 self.addEventListener('install', event => event.waitUntil(onInstall(event)));
@@ -19,7 +20,7 @@ async function onInstall(event) {
 async function onActivate(event) {
     const cacheKeys = await caches.keys();
     await Promise.all(cacheKeys
-        .filter(k => k !== cacheName)
+        .filter(k => k.startsWith(cacheNamePrefix) && k !== cacheName)
         .map(k => caches.delete(k)));
 }
 
