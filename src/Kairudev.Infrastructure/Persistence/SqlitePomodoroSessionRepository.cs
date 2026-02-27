@@ -21,6 +21,14 @@ internal sealed class SqlitePomodoroSessionRepository : IPomodoroSessionReposito
     public async Task<PomodoroSession?> GetByIdAsync(PomodoroSessionId id, CancellationToken cancellationToken = default) =>
         await _context.PomodoroSessions.FindAsync([id], cancellationToken);
 
+    public async Task<IReadOnlyList<PomodoroSession>> GetByIdsAsync(IEnumerable<PomodoroSessionId> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        return await _context.PomodoroSessions
+            .Where(s => idList.Contains(s.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<PomodoroSession?> GetActiveAsync(CancellationToken cancellationToken = default) =>
         await _context.PomodoroSessions
             .FirstOrDefaultAsync(s => s.Status == PomodoroSessionStatus.Active, cancellationToken);
@@ -40,5 +48,28 @@ internal sealed class SqlitePomodoroSessionRepository : IPomodoroSessionReposito
                      && s.EndedAt.HasValue
                      && s.EndedAt.Value.Date == today,
                 cancellationToken);
+    }
+
+    public async Task<int> GetCompletedSprintsTodayCountAsync(CancellationToken cancellationToken = default)
+    {
+        var today = DateTime.UtcNow.Date;
+        return await _context.PomodoroSessions
+            .CountAsync(
+                s => s.SessionType == PomodoroSessionType.Sprint
+                     && s.Status == PomodoroSessionStatus.Completed
+                     && s.EndedAt.HasValue
+                     && s.EndedAt.Value.Date == today,
+                cancellationToken);
+    }
+
+    public async Task<PomodoroSession?> GetLatestCompletedTodayAsync(CancellationToken cancellationToken = default)
+    {
+        var today = DateTime.UtcNow.Date;
+        return await _context.PomodoroSessions
+            .Where(s => s.Status == PomodoroSessionStatus.Completed
+                        && s.EndedAt.HasValue
+                        && s.EndedAt.Value.Date == today)
+            .OrderByDescending(s => s.EndedAt)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

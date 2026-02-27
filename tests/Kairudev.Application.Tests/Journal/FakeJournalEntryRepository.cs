@@ -27,6 +27,13 @@ internal sealed class FakeJournalEntryRepository : IJournalEntryRepository
         return Task.FromResult(result);
     }
 
+    public Task<int> GetTodayCountByTypeAsync(JournalEventType eventType, DateOnly today, CancellationToken cancellationToken = default)
+    {
+        var start = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var end   = today.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+        return Task.FromResult(Entries.Count(e => e.EventType == eventType && e.OccurredAt >= start && e.OccurredAt <= end));
+    }
+
     public Task UpdateAsync(JournalEntry entry, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 }

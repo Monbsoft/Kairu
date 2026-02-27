@@ -31,10 +31,14 @@ public sealed class InterruptSessionCommandHandler
 
         await _sessionRepository.UpdateAsync(session, cancellationToken);
 
+        var eventType = session.SessionType == PomodoroSessionType.Sprint
+            ? JournalEventType.SprintInterrupted
+            : JournalEventType.BreakInterrupted;
+
         // Generate journal entry
         await _journalHandler.HandleAsync(
             new CreateEntryCommand(
-                JournalEventType.SprintInterrupted,
+                eventType,
                 session.Id.Value,
                 DateTime.UtcNow),
             cancellationToken);

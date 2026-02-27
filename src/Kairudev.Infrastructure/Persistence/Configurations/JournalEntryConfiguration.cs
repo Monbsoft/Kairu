@@ -21,6 +21,8 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
 
         builder.Property(e => e.ResourceId).IsRequired();
 
+        builder.Property(e => e.Sequence).IsRequired(false);
+
         builder.HasMany(e => e.Comments)
             .WithOne()
             .HasForeignKey("EntryId")

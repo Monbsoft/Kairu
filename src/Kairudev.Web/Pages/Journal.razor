@@ -2,93 +2,406 @@
 @using Kairudev.Web.Services
 @inject JournalApiClient Api
 
-<h2>📖 @GetJournalTitle()</h2>
+<div class="notebook">
 
-@if (errorMessage is not null)
-{
-    <div class="alert alert-danger">@errorMessage</div>
-}
+    <div class="notebook-header">
+        <div class="notebook-title">
+            <span class="notebook-day">@GetDayName()</span>
+            <span class="notebook-date">@GetDateFull()</span>
+        </div>
+        <div class="notebook-subtitle">Journal de bord</div>
+    </div>
 
-@if (entries is null)
-{
-    <p>Chargement…</p>
-}
-else if (entries.Count == 0)
-{
-    <p class="text-muted">Aucune activité enregistrée pour cette date.</p>
-}
-else
-{
-    <div class="journal-list">
-        @foreach (var entry in entries)
+    <div class="notebook-body">
+
+        @if (errorMessage is not null)
         {
-            <div class="journal-entry mb-3 p-3 border rounded">
-                <div class="d-flex align-items-start">
-                    <div class="entry-time me-3">
-                        <strong class="text-primary">@entry.OccurredAt.ToLocalTime().ToString("HH:mm")</strong>
-                    </div>
-                    <div class="entry-icon me-2">
-                        @GetEventIcon(entry.EventType)
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="entry-label mb-2">
-                            <strong>@GetEventLabel(entry.EventType)</strong>
+            <div class="alert alert-danger mx-3 mt-3">@errorMessage</div>
+        }
+
+        @if (entries is null)
+        {
+            <p class="text-muted px-4 pt-3 fst-italic">Chargement…</p>
+        }
+        else if (entries.Count == 0)
+        {
+            <div class="notebook-empty">
+                <div class="notebook-empty-icon">📓</div>
+                <p class="text-muted fst-italic mb-1">Aucune activité enregistrée aujourd'hui.</p>
+                <p class="text-muted small">Démarrez un sprint Pomodoro pour voir apparaître vos entrées ici.</p>
+            </div>
+        }
+        else
+        {
+            <div class="notebook-timeline">
+                @foreach (var entry in entries)
+                {
+                    <div class="nb-entry nb-@GetEntryVariant(entry.EventType)">
+                        <div class="nb-time">@entry.OccurredAt.ToLocalTime().ToString("HH:mm")</div>
+                        <div class="nb-dot-col">
+                            <div class="nb-dot"></div>
+                            <div class="nb-line"></div>
                         </div>
-
-                        @if (entry.Comments.Count > 0)
-                        {
-                            <ul class="list-group list-group-flush mt-2">
-                                @foreach (var comment in entry.Comments)
-                                {
-                                    <li class="list-group-item p-2">
-                                        @if (editingCommentId == comment.Id)
-                                        {
-                                            <textarea class="form-control mb-2"
-                                                      @bind="editCommentText"
-                                                      @bind:event="oninput"
-                                                      rows="2"></textarea>
-                                            <button class="btn btn-sm btn-primary me-2" @onclick="() => SaveEditComment(entry.Id, comment.Id)">Enregistrer</button>
-                                            <button class="btn btn-sm btn-secondary" @onclick="CancelEditComment">Annuler</button>
-                                        }
-                                        else
-                                        {
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="flex-grow-1">@comment.Text</div>
-                                                <div class="d-flex gap-1">
-                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditComment(comment)" title="Modifier">✎</button>
-                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteComment(entry.Id, comment.Id)" title="Supprimer">✕</button>
-                                                </div>
-                                            </div>
-                                        }
-                                    </li>
-                                }
-                            </ul>
-                        }
-
-                        @if (addingCommentForEntryId == entry.Id)
-                        {
-                            <div class="mt-2">
-                                <textarea class="form-control mb-2"
-                                          placeholder="Ajouter un commentaire…"
-                                          @bind="newCommentText"
-                                          @bind:event="oninput"
-                                          rows="2"></textarea>
-                                <button class="btn btn-sm btn-primary me-2" @onclick="() => SaveAddComment(entry.Id)">Ajouter</button>
-                                <button class="btn btn-sm btn-secondary" @onclick="CancelAddComment">Annuler</button>
+                        <div class="nb-content">
+                            <div class="nb-event">
+                                <span class="nb-icon">@GetEventIcon(entry.EventType)</span>
+                                <span class="nb-label">@GetEventLabel(entry)</span>
                             </div>
-                        }
-                        else
-                        {
-                            <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="() => StartAddComment(entry.Id)">
-                                💬 Ajouter un commentaire
-                            </button>
-                        }
+
+                            @if (entry.LinkedTaskTitles.Count > 0)
+                            {
+                                <div class="nb-tasks">
+                                    <span class="nb-tasks-header">Tâches travaillées</span>
+                                    <ul class="nb-tasks-list">
+                                        @foreach (var title in entry.LinkedTaskTitles)
+                                        {
+                                            <li>@title</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+
+                            @foreach (var comment in entry.Comments)
+                            {
+                                <div class="nb-comment">
+                                    @if (editingCommentId == comment.Id)
+                                    {
+                                        <textarea class="form-control form-control-sm mb-1"
+                                                  @bind="editCommentText"
+                                                  @bind:event="oninput"
+                                                  rows="2"></textarea>
+                                        <button class="btn btn-sm btn-primary me-1" @onclick="() => SaveEditComment(entry.Id, comment.Id)">✓ Enregistrer</button>
+                                        <button class="btn btn-sm btn-outline-secondary" @onclick="CancelEditComment">Annuler</button>
+                                    }
+                                    else
+                                    {
+                                        <div class="nb-comment-body">
+                                            <span class="nb-comment-text">✏️ @comment.Text</span>
+                                            <span class="nb-comment-actions">
+                                                <button class="btn-icon" @onclick="() => StartEditComment(comment)" title="Modifier">✎</button>
+                                                <button class="btn-icon btn-icon-danger" @onclick="() => DeleteComment(entry.Id, comment.Id)" title="Supprimer">✕</button>
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @if (addingCommentForEntryId == entry.Id)
+                            {
+                                <div class="nb-add-comment mt-2">
+                                    <textarea class="form-control form-control-sm mb-1"
+                                              placeholder="Votre note…"
+                                              @bind="newCommentText"
+                                              @bind:event="oninput"
+                                              rows="2"></textarea>
+                                    <button class="btn btn-sm btn-primary me-1" @onclick="() => SaveAddComment(entry.Id)">Ajouter</button>
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="CancelAddComment">Annuler</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="nb-add-btn" @onclick="() => StartAddComment(entry.Id)">+ note</button>
+                            }
+                        </div>
                     </div>
-                </div>
+                }
             </div>
         }
     </div>
-}
+</div>
+
+<style>
+    /* ── Variables — light (défaut) ──────────────────────── */
+    .notebook {
+        --nb-body-bg:            #fafaf7;
+        --nb-body-border:        #e4e0d8;
+        --nb-dot-default-bg:     #fafaf7;
+        --nb-dot-default-border: #c8c4bc;
+        --nb-line-color:         #e8e4da;
+        --nb-time-color:         #a09ea8;
+        --nb-label-color:        #2c2c3a;
+        --nb-tasks-label-color:  #9896a8;
+        --nb-tasks-item-color:   #3a3848;
+        --nb-comment-bg:         #f0ede6;
+        --nb-comment-border:     #d4c89a;
+        --nb-comment-text-color: #3c3a4a;
+        --nb-add-btn-border:     #ccc8be;
+        --nb-add-btn-color:      #b0aeba;
+        --nb-btn-icon-color:     #888888;
+        --nb-sprint-dot-bg:      #e8f0fe;
+        --nb-break-dot-bg:       #e8f5ee;
+        --nb-task-dot-bg:        #f0ebfa;
+        --nb-warn-dot-bg:        #fff3e8;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    /* ── Variables — dark ────────────────────────────────── */
+    [data-bs-theme="dark"] .notebook {
+        --nb-body-bg:            #13131f;
+        --nb-body-border:        #252538;
+        --nb-dot-default-bg:     #13131f;
+        --nb-dot-default-border: #3a3a5c;
+        --nb-line-color:         #252538;
+        --nb-time-color:         #6272a4;
+        --nb-label-color:        #ccd6f6;
+        --nb-tasks-label-color:  #6272a4;
+        --nb-tasks-item-color:   #8892b0;
+        --nb-comment-bg:         #1c1c2e;
+        --nb-comment-border:     #3a3a5c;
+        --nb-comment-text-color: #8892b0;
+        --nb-add-btn-border:     #3a3a5c;
+        --nb-add-btn-color:      #6272a4;
+        --nb-btn-icon-color:     #6272a4;
+        --nb-sprint-dot-bg:      #0d1b3e;
+        --nb-break-dot-bg:       #0d2818;
+        --nb-task-dot-bg:        #1e0d3e;
+        --nb-warn-dot-bg:        #3e1e0d;
+    }
+
+    /* ── En-tête (déjà sombre, invariant) ───────────────── */
+    .notebook-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 8px 8px 0 0;
+        padding: 1.25rem 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .notebook-title {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .notebook-day {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: #8892b0;
+        font-weight: 700;
+    }
+
+    .notebook-date {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #e6f1ff;
+        line-height: 1.2;
+    }
+
+    .notebook-subtitle {
+        font-size: 0.75rem;
+        color: #8892b0;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        align-self: flex-end;
+    }
+
+    /* ── Corps ───────────────────────────────────────────── */
+    .notebook-body {
+        background: var(--nb-body-bg);
+        border: 1px solid var(--nb-body-border);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        min-height: 120px;
+    }
+
+    .notebook-empty {
+        padding: 3rem 2rem;
+        text-align: center;
+    }
+
+    .notebook-empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.4;
+    }
+
+    /* ── Timeline ────────────────────────────────────────── */
+    .notebook-timeline {
+        padding: 1rem 1.25rem 1rem 0.75rem;
+    }
+
+    .nb-entry {
+        display: grid;
+        grid-template-columns: 48px 20px 1fr;
+        gap: 0 0.5rem;
+        min-height: 40px;
+    }
+
+    /* Colonne heure */
+    .nb-time {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--nb-time-color);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        padding-top: 2px;
+        letter-spacing: 0.02em;
+    }
+
+    /* Colonne dot + ligne */
+    .nb-dot-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .nb-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid var(--nb-dot-default-border);
+        background: var(--nb-dot-default-bg);
+        flex-shrink: 0;
+        margin-top: 4px;
+    }
+
+    .nb-line {
+        width: 2px;
+        flex-grow: 1;
+        background: var(--nb-line-color);
+        margin-top: 3px;
+        min-height: 16px;
+    }
+
+    .nb-entry:last-child .nb-line {
+        display: none;
+    }
+
+    /* Variantes de couleur des dots */
+    .nb-sprint .nb-dot { border-color: #0d6efd; background: var(--nb-sprint-dot-bg); }
+    .nb-break  .nb-dot { border-color: #198754; background: var(--nb-break-dot-bg);  }
+    .nb-task   .nb-dot { border-color: #6f42c1; background: var(--nb-task-dot-bg);   }
+    .nb-warn   .nb-dot { border-color: #fd7e14; background: var(--nb-warn-dot-bg);   }
+
+    /* ── Contenu d'une entrée ────────────────────────────── */
+    .nb-content {
+        padding-bottom: 1rem;
+    }
+
+    .nb-event {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .nb-icon {
+        font-size: 0.95rem;
+        line-height: 1;
+    }
+
+    .nb-label {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--nb-label-color);
+    }
+
+    /* ── Tâches travaillées ──────────────────────────────── */
+    .nb-tasks {
+        margin: 0.3rem 0 0.2rem 1.4rem;
+    }
+
+    .nb-tasks-header {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--nb-tasks-label-color);
+        font-weight: 700;
+    }
+
+    .nb-tasks-list {
+        margin: 0.2rem 0 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .nb-tasks-list li {
+        font-size: 0.83rem;
+        color: var(--nb-tasks-item-color);
+        padding: 0.1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .nb-tasks-list li::before {
+        content: '→';
+        color: #0d6efd;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+
+    /* ── Commentaires ────────────────────────────────────── */
+    .nb-comment {
+        margin: 0.3rem 0 0 1.4rem;
+    }
+
+    .nb-comment-body {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+        background: var(--nb-comment-bg);
+        border-left: 3px solid var(--nb-comment-border);
+        padding: 0.3rem 0.5rem;
+        border-radius: 0 4px 4px 0;
+        font-size: 0.82rem;
+    }
+
+    .nb-comment-text {
+        flex-grow: 1;
+        color: var(--nb-comment-text-color);
+    }
+
+    .nb-comment-actions {
+        display: flex;
+        gap: 0.2rem;
+        opacity: 0;
+        transition: opacity 0.15s;
+        flex-shrink: 0;
+    }
+
+    .nb-comment-body:hover .nb-comment-actions,
+    .nb-comment-body:focus-within .nb-comment-actions {
+        opacity: 1;
+    }
+
+    .btn-icon {
+        background: none;
+        border: none;
+        padding: 0 0.2rem;
+        font-size: 0.78rem;
+        cursor: pointer;
+        color: var(--nb-btn-icon-color);
+        line-height: 1;
+    }
+
+    .btn-icon:hover         { color: #0d6efd; }
+    .btn-icon-danger:hover  { color: #dc3545; }
+
+    /* ── Bouton + note ───────────────────────────────────── */
+    .nb-add-btn {
+        background: none;
+        border: 1px dashed var(--nb-add-btn-border);
+        border-radius: 4px;
+        padding: 0.12rem 0.5rem;
+        font-size: 0.72rem;
+        color: var(--nb-add-btn-color);
+        cursor: pointer;
+        margin-left: 1.4rem;
+        margin-top: 0.25rem;
+        display: inline-block;
+        transition: all 0.15s;
+    }
+
+    .nb-add-btn:hover {
+        border-color: #0d6efd;
+        color: #0d6efd;
+        background: var(--nb-sprint-dot-bg);
+    }
+</style>
 
 @code {
     private List<JournalEntryDto>? entries;
@@ -100,25 +413,10 @@ else
     private Guid? editingCommentId;
     private string editCommentText = string.Empty;
 
+    private static readonly System.Globalization.CultureInfo Fr = new("fr-FR");
+
     protected override async Task OnInitializedAsync() =>
         await LoadEntries();
-
-    private string GetJournalTitle()
-    {
-        if (entries is null || entries.Count == 0)
-            return "Journal d'aujourd'hui";
-
-        var firstEntryDate = entries.First().OccurredAt.ToLocalTime().Date;
-        var today = DateTime.Today;
-
-        if (firstEntryDate == today)
-            return "Journal d'aujourd'hui";
-
-        if (firstEntryDate == today.AddDays(-1))
-            return "Journal d'hier";
-
-        return $"Journal du {firstEntryDate:dddd d MMMM yyyy}";
-    }
 
     private async Task LoadEntries()
     {
@@ -133,6 +431,60 @@ else
         }
     }
 
+    // ── Helpers date ──────────────────────────────────────
+
+    private string GetDayName()
+    {
+        var date = entries?.Count > 0 ? entries[0].OccurredAt.ToLocalTime().Date : DateTime.Today;
+        return date.ToString("dddd", Fr).ToUpperInvariant();
+    }
+
+    private string GetDateFull()
+    {
+        var date = entries?.Count > 0 ? entries[0].OccurredAt.ToLocalTime().Date : DateTime.Today;
+        return date.ToString("d MMMM yyyy", Fr);
+    }
+
+    // ── Helpers entrée ────────────────────────────────────
+
+    private static string GetEntryVariant(string eventType) => eventType switch
+    {
+        "SprintStarted" or "SprintCompleted"    => "sprint",
+        "SprintInterrupted"                     => "warn",
+        "BreakStarted"  or "BreakCompleted"     => "break",
+        "BreakInterrupted"                      => "warn",
+        "TaskStarted"   or "TaskCompleted"      => "task",
+        _                                       => "sprint"
+    };
+
+    private static string GetEventIcon(string eventType) => eventType switch
+    {
+        "SprintStarted"     => "🍅",
+        "SprintCompleted"   => "✅",
+        "SprintInterrupted" => "⏸️",
+        "BreakStarted"      => "☕",
+        "BreakCompleted"    => "🌿",
+        "BreakInterrupted"  => "⚡",
+        "TaskStarted"       => "🚀",
+        "TaskCompleted"     => "🎉",
+        _                   => "📌"
+    };
+
+    private static string GetEventLabel(JournalEntryDto entry) => entry.EventType switch
+    {
+        "SprintStarted"     => "Sprint démarré",
+        "SprintCompleted"   => "Sprint complété",
+        "SprintInterrupted" => "Sprint interrompu",
+        "BreakStarted"      => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} démarrée"    : "Pause démarrée",
+        "BreakCompleted"    => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} terminée"    : "Pause terminée",
+        "BreakInterrupted"  => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} interrompue" : "Pause interrompue",
+        "TaskStarted"       => "Tâche démarrée",
+        "TaskCompleted"     => "Tâche complétée",
+        _                   => entry.EventType
+    };
+
+    // ── Actions commentaires ──────────────────────────────
+
     private void StartAddComment(Guid entryId)
     {
         addingCommentForEntryId = entryId;
@@ -141,9 +493,7 @@ else
 
     private async Task SaveAddComment(Guid entryId)
     {
-        if (string.IsNullOrWhiteSpace(newCommentText))
-            return;
-
+        if (string.IsNullOrWhiteSpace(newCommentText)) return;
         try
         {
             await Api.AddCommentAsync(entryId, newCommentText);
@@ -151,10 +501,7 @@ else
             newCommentText = string.Empty;
             await LoadEntries();
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Erreur lors de l'ajout : {ex.Message}";
-        }
+        catch (Exception ex) { errorMessage = $"Erreur lors de l'ajout : {ex.Message}"; }
     }
 
     private void CancelAddComment()
@@ -171,9 +518,7 @@ else
 
     private async Task SaveEditComment(Guid entryId, Guid commentId)
     {
-        if (string.IsNullOrWhiteSpace(editCommentText))
-            return;
-
+        if (string.IsNullOrWhiteSpace(editCommentText)) return;
         try
         {
             await Api.UpdateCommentAsync(entryId, commentId, editCommentText);
@@ -181,10 +526,7 @@ else
             editCommentText = string.Empty;
             await LoadEntries();
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Erreur lors de la modification : {ex.Message}";
-        }
+        catch (Exception ex) { errorMessage = $"Erreur lors de la modification : {ex.Message}"; }
     }
 
     private void CancelEditComment()
@@ -200,29 +542,6 @@ else
             await Api.DeleteCommentAsync(entryId, commentId);
             await LoadEntries();
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Erreur lors de la suppression : {ex.Message}";
-        }
+        catch (Exception ex) { errorMessage = $"Erreur lors de la suppression : {ex.Message}"; }
     }
-
-    private string GetEventIcon(string eventType) => eventType switch
-    {
-        "SprintStarted" => "🍅",
-        "SprintCompleted" => "✅",
-        "SprintInterrupted" => "⏸️",
-        "TaskStarted" => "🚀",
-        "TaskCompleted" => "🎉",
-        _ => "📌"
-    };
-
-    private string GetEventLabel(string eventType) => eventType switch
-    {
-        "SprintStarted" => "Sprint démarré",
-        "SprintCompleted" => "Sprint complété",
-        "SprintInterrupted" => "Sprint interrompu",
-        "TaskStarted" => "Tâche démarrée",
-        "TaskCompleted" => "Tâche complétée",
-        _ => eventType
-    };
 }

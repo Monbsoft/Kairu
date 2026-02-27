@@ -5,6 +5,8 @@ public sealed record JournalEntryDto(
     DateTime OccurredAt,
     string EventType,
     Guid ResourceId,
+    int? Sequence,
+    List<string> LinkedTaskTitles,
     List<JournalCommentDto> Comments);
 
 public sealed record JournalCommentDto(

@@ -34,10 +34,14 @@ public sealed class CompleteSessionCommandHandler
 
         await _sessionRepository.UpdateAsync(session, cancellationToken);
 
+        var eventType = session.SessionType == PomodoroSessionType.Sprint
+            ? JournalEventType.SprintCompleted
+            : JournalEventType.BreakCompleted;
+
         // Generate journal entry
         await _journalHandler.HandleAsync(
             new CreateEntryCommand(
-                JournalEventType.SprintCompleted,
+                eventType,
                 session.Id.Value,
                 DateTime.UtcNow),
             cancellationToken);

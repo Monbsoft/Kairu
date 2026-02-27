@@ -31,6 +31,14 @@ public sealed class SqliteJournalEntryRepository : IJournalEntryRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<int> GetTodayCountByTypeAsync(JournalEventType eventType, DateOnly today, CancellationToken cancellationToken = default)
+    {
+        var start = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var end   = today.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+        return await _context.JournalEntries
+            .CountAsync(e => e.EventType == eventType && e.OccurredAt >= start && e.OccurredAt <= end, cancellationToken);
+    }
+
     public async Task UpdateAsync(JournalEntry entry, CancellationToken cancellationToken = default)
     {
         _context.JournalEntries.Update(entry);

@@ -9,12 +9,16 @@ public sealed record JournalEntryViewModel(
     DateTime OccurredAt,
     string EventType,
     Guid ResourceId,
+    int? Sequence,
+    IReadOnlyList<string> LinkedTaskTitles,
     IReadOnlyList<JournalCommentViewModel> Comments)
 {
-    public static JournalEntryViewModel From(JournalEntry entry) => new(
+    public static JournalEntryViewModel From(JournalEntry entry, IReadOnlyList<string>? taskTitles = null) => new(
         entry.Id.Value,
         entry.OccurredAt,
         entry.EventType.ToString(),
         entry.ResourceId,
+        entry.Sequence,
+        taskTitles ?? [],
         entry.Comments.Select(c => new JournalCommentViewModel(c.Id.Value, c.Text)).ToList().AsReadOnly());
 }
