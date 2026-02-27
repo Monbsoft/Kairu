@@ -131,9 +131,8 @@ else
 
         if (theme == "System")
         {
-            effectiveTheme = await JSRuntime.InvokeAsync<bool>("matchMedia", "(prefers-color-scheme: dark)") 
-                ? "Dark" 
-                : "Light";
+            var isDark = await JSRuntime.InvokeAsync<bool>("eval", "window.matchMedia('(prefers-color-scheme: dark)').matches");
+            effectiveTheme = isDark ? "Dark" : "Light";
         }
 
         await JSRuntime.InvokeVoidAsync("eval", 

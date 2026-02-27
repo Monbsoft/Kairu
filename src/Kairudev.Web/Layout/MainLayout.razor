@@ -1,4 +1,8 @@
 ﻿@inherits LayoutComponentBase
+@using Kairudev.Web.Services
+@inject SettingsApiClient SettingsApi
+@inject IJSRuntime JSRuntime
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -14,3 +18,38 @@
         </article>
     </main>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Load and apply theme preference on app startup
+        try
+        {
+            var userSettings = await SettingsApi.GetSettingsAsync();
+            if (userSettings is not null)
+            {
+                await ApplyTheme(userSettings.ThemePreference);
+            }
+        }
+        catch
+        {
+            // Ignore errors during theme initialization
+        }
+    }
+
+    private async Task ApplyTheme(string theme)
+    {
+        var effectiveTheme = theme;
+
+        if (theme == "System")
+        {
+            var isDark = await JSRuntime.InvokeAsync<bool>("eval", "window.matchMedia('(prefers-color-scheme: dark)').matches");
+            effectiveTheme = isDark ? "Dark" : "Light";
+        }
+
+        await JSRuntime.InvokeVoidAsync("eval", 
+            effectiveTheme == "Dark" 
+                ? "document.documentElement.setAttribute('data-bs-theme', 'dark')" 
+                : "document.documentElement.setAttribute('data-bs-theme', 'light')");
+    }
+}
