@@ -1,0 +1,463 @@
+@page "/pomodoro"
+@using Kairudev.Maui.Services
+@inject PomodoroApiClient PomodoroApi
+@inject TaskApiClient TaskApi
+@implements IAsyncDisposable
+
+<h2>Pomodoro</h2>
+
+@if (!_loaded)
+{
+    <p>Chargement…</p>
+}
+else
+{
+    <div class="d-flex flex-column align-items-center gap-3">
+
+        <!-- Sélection du type de session (onglets) -->
+        @if (_session is null || _session.Status is "Completed" or "Interrupted")
+        {
+            <div class="btn-group mb-3" role="group" aria-label="Type de session">
+                <input type="radio" class="btn-check" name="sessionType" id="typeSprint" value="Sprint" 
+                       checked="@(_selectedSessionType == "Sprint")" @onchange="@(e => SelectSessionType("Sprint"))">
+                <label class="btn btn-outline-primary" for="typeSprint">
+                    🍅 Sprint (@_sprintDuration min)
+                </label>
+
+                <input type="radio" class="btn-check" name="sessionType" id="typeShortBreak" value="ShortBreak" 
+                       checked="@(_selectedSessionType == "ShortBreak")" @onchange="@(e => SelectSessionType("ShortBreak"))">
+                <label class="btn btn-outline-success" for="typeShortBreak">
+                    ☕ Pause courte (@_shortBreakDuration min)
+                </label>
+
+                <input type="radio" class="btn-check" name="sessionType" id="typeLongBreak" value="LongBreak" 
+                       checked="@(_selectedSessionType == "LongBreak")" @onchange="@(e => SelectSessionType("LongBreak"))">
+                <label class="btn btn-outline-info" for="typeLongBreak">
+                    🌙 Pause longue (@_longBreakDuration min)
+                </label>
+            </div>
+        }
+
+        <!-- Horloge circulaire -->
+        <svg viewBox="0 0 220 220" width="220" height="220" style="overflow:visible">
+            <!-- Cercle de fond -->
+            <circle cx="110" cy="110" r="95"
+                    fill="none"
+                    stroke="#e9ecef"
+                    stroke-width="14" />
+            <!-- Arc de progression -->
+            <circle cx="110" cy="110" r="95"
+                    fill="none"
+                    stroke="@ArcColor"
+                    stroke-width="14"
+                    stroke-linecap="round"
+                    stroke-dasharray="@_circumference.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                    stroke-dashoffset="@DashOffset.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                    transform="rotate(-90 110 110)"
+                    style="transition: stroke-dashoffset 0.8s linear, stroke 0.4s ease;" />
+            <!-- Temps restant -->
+            <text x="110" y="105"
+                  text-anchor="middle"
+                  dominant-baseline="middle"
+                  font-size="42"
+                  font-family="monospace"
+                  fill="currentColor">
+                @TimeDisplay
+            </text>
+            <!-- Statut -->
+            <text x="110" y="148"
+                  text-anchor="middle"
+                  font-size="15"
+                  fill="#6c757d">
+                @StatusLabel
+            </text>
+        </svg>
+
+        <!-- Boutons de contrôle -->
+        <div class="d-flex gap-2">
+            @if (_session is null || _session.Status is "Completed" or "Interrupted")
+            {
+                <button class="btn btn-primary btn-lg" @onclick="StartSession">
+                    ▶ Démarrer
+                </button>
+            }
+            else if (_session.Status == "Active")
+            {
+                <button class="btn btn-outline-warning btn-lg" @onclick="InterruptSession">
+                    ⏹ Interrompre
+                </button>
+            }
+        </div>
+
+        <!-- Résultat après un sprint terminé -->
+        @if (_completeResult is not null)
+        {
+            var breakLabel = _completeResult.BreakType == "long" ? "longue" : "courte";
+            <div class="alert alert-success text-center" style="max-width:360px">
+                Sprint terminé ! Pause @breakLabel recommandée :
+                <strong>@_completeResult.BreakDurationMinutes min</strong>
+            </div>
+        }
+
+        <!-- Tâches liées au sprint actif -->
+        @if (_session?.Status == "Active")
+        {
+            <div style="width:100%;max-width:480px">
+                <h5 class="mb-2">Tâches du sprint</h5>
+
+                @if (_linkedTasks.Count > 0)
+                {
+                    <ul class="list-group mb-3">
+                        @foreach (var task in _linkedTasks)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span class="@(task.Status == "Done" ? "text-decoration-line-through text-muted" : "")">
+                                    @task.Title
+                                </span>
+                                <span class="d-flex gap-2 align-items-center">
+                                    <span class="badge @BadgeClass(task.Status)">@task.Status</span>
+                                    @if (task.Status == "Todo")
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @onclick="() => SetTaskInProgress(task.Id)">
+                                            En cours
+                                        </button>
+                                    }
+                                    @if (task.Status != "Done")
+                                    {
+                                        <button class="btn btn-sm btn-success"
+                                                @onclick="() => CompleteLinkedTask(task.Id)">
+                                            ✓
+                                        </button>
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                <!-- Lier une tâche existante -->
+                <div class="mb-2">
+                    <select class="form-select form-select-sm" @bind="_selectedTaskIdToLink">
+                        <option value="">— Lier une tâche existante —</option>
+                        @foreach (var task in _unlinkableTasks)
+                        {
+                            <option value="@task.Id">@task.Title</option>
+                        }
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary mt-1"
+                            disabled="@string.IsNullOrEmpty(_selectedTaskIdToLink)"
+                            @onclick="LinkExistingTask">
+                        Lier
+                    </button>
+                </div>
+
+                <!-- Créer une nouvelle tâche -->
+                <div class="d-flex gap-2">
+                    <input class="form-control form-control-sm"
+                           placeholder="Nouvelle tâche pendant le sprint…"
+                           @bind="_newTaskTitle"
+                           @bind:event="oninput"
+                           @onkeydown="OnNewTaskKeyDown" />
+                    <button class="btn btn-sm btn-primary"
+                            disabled="@string.IsNullOrWhiteSpace(_newTaskTitle)"
+                            @onclick="CreateTask">
+                        +
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (_errorMessage is not null)
+        {
+            <div class="alert alert-danger" style="max-width:480px">@_errorMessage</div>
+        }
+    </div>
+}
+
+@code {
+    // ── Constantes SVG ─────────────────────────────────────────────────────
+    private const double Radius = 95.0;
+    private readonly double _circumference = 2 * Math.PI * Radius;
+
+    // ── État ──────────────────────────────────────────────────────────────
+    private bool _loaded;
+    private PomodoroSessionDto? _session;
+    private PomodoroCompleteResultDto? _completeResult;
+    private List<TaskDto> _allTasks = [];
+    private List<TaskDto> _linkedTasks = [];
+    private string? _errorMessage;
+    private string _newTaskTitle = string.Empty;
+    private string _selectedTaskIdToLink = string.Empty;
+
+    // ── Session type selection ────────────────────────────────────────────
+    private string _selectedSessionType = "Sprint";
+    private int _sprintDuration = 25;
+    private int _shortBreakDuration = 5;
+    private int _longBreakDuration = 15;
+
+    // ── Timer ─────────────────────────────────────────────────────────────
+    private int _remainingSeconds;
+    private int _totalSeconds;
+    private CancellationTokenSource? _timerCts;
+
+    // ── Computed ──────────────────────────────────────────────────────────
+    private string TimeDisplay =>
+        _remainingSeconds >= 0
+            ? $"{_remainingSeconds / 60:D2}:{_remainingSeconds % 60:D2}"
+            : "00:00";
+
+    private string StatusLabel => _session?.Status switch
+    {
+        "Active" => _session.SessionType switch
+        {
+            "Sprint" => "Sprint en cours",
+            "ShortBreak" => "Pause courte",
+            "LongBreak" => "Pause longue",
+            _ => "En cours"
+        },
+        "Completed"   => "Terminé",
+        "Interrupted" => "Interrompu",
+        _             => "Prêt"
+    };
+
+    private string ArcColor => _session?.Status switch
+    {
+        "Active" => _session.SessionType switch
+        {
+            "Sprint" => "#0d6efd",      // Bleu pour sprint
+            "ShortBreak" => "#198754",  // Vert pour pause courte
+            "LongBreak" => "#0dcaf0",   // Cyan pour pause longue
+            _ => "#0d6efd"
+        },
+        "Completed"   => "#198754",
+        "Interrupted" => "#ffc107",
+        _             => "#adb5bd"
+    };
+
+    private double DashOffset
+    {
+        get
+        {
+            if (_totalSeconds <= 0 || _session?.Status != "Active")
+                return 0;
+            var progress = Math.Clamp((double)_remainingSeconds / _totalSeconds, 0, 1);
+            return _circumference * (1 - progress);
+        }
+    }
+
+    private IEnumerable<TaskDto> _unlinkableTasks =>
+        _allTasks.Where(t =>
+            t.Status != "Done" &&
+            (_session is null || !_session.LinkedTaskIds.Contains(t.Id)));
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        _allTasks = await TaskApi.GetAllAsync();
+        _session  = await PomodoroApi.GetCurrentSessionAsync();
+
+        // Load suggested session type and durations
+        var suggested = await PomodoroApi.GetSuggestedSessionTypeAsync();
+        if (suggested is not null)
+        {
+            _selectedSessionType = suggested.SuggestedType;
+            _sprintDuration = suggested.SprintDurationMinutes;
+            _shortBreakDuration = suggested.ShortBreakDurationMinutes;
+            _longBreakDuration = suggested.LongBreakDurationMinutes;
+        }
+
+        if (_session?.Status == "Active")
+        {
+            InitTimer(_session);
+            await StartTimerLoop();
+        }
+
+        RefreshLinkedTasks();
+        _loaded = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_timerCts is not null)
+        {
+            await _timerCts.CancelAsync();
+            _timerCts.Dispose();
+        }
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────
+    private void SelectSessionType(string sessionType)
+    {
+        _selectedSessionType = sessionType;
+        StateHasChanged();
+    }
+
+    private async Task StartSession()
+    {
+        _errorMessage = null;
+        _completeResult = null;
+
+        var started = await PomodoroApi.StartSessionAsync(_selectedSessionType);
+        if (started is null)
+        {
+            _errorMessage = "Impossible de démarrer la session.";
+            return;
+        }
+
+        _session = started;
+        InitTimer(_session);
+        RefreshLinkedTasks();
+        await StartTimerLoop();
+    }
+
+    private async Task InterruptSession()
+    {
+        _errorMessage = null;
+        await StopTimer();
+
+        var ok = await PomodoroApi.InterruptSessionAsync();
+        if (!ok)
+        {
+            _errorMessage = "Impossible d'interrompre le sprint.";
+            return;
+        }
+
+        _session = await PomodoroApi.GetCurrentSessionAsync();
+        RefreshLinkedTasks();
+    }
+
+    private async Task OnTimerCompleted()
+    {
+        var result = await PomodoroApi.CompleteSessionAsync();
+        _completeResult = result;
+        _session = await PomodoroApi.GetCurrentSessionAsync();
+        _remainingSeconds = 0;
+        RefreshLinkedTasks();
+        StateHasChanged();
+    }
+
+    private async Task LinkExistingTask()
+    {
+        if (!Guid.TryParse(_selectedTaskIdToLink, out var id)) return;
+        _errorMessage = null;
+
+        var ok = await PomodoroApi.LinkTaskAsync(id);
+        if (!ok) { _errorMessage = "Impossible de lier la tâche."; return; }
+
+        _session = await PomodoroApi.GetCurrentSessionAsync();
+        _selectedTaskIdToLink = string.Empty;
+        RefreshLinkedTasks();
+    }
+
+    private async Task CreateTask()
+    {
+        if (string.IsNullOrWhiteSpace(_newTaskTitle)) return;
+        _errorMessage = null;
+
+        var created = await PomodoroApi.CreateTaskDuringSessionAsync(_newTaskTitle.Trim());
+        if (created is null) { _errorMessage = "Impossible de créer la tâche."; return; }
+
+        _allTasks.Add(created);
+        _session = await PomodoroApi.GetCurrentSessionAsync();
+        _newTaskTitle = string.Empty;
+        RefreshLinkedTasks();
+    }
+
+    private async Task SetTaskInProgress(Guid taskId)
+    {
+        _errorMessage = null;
+        var updated = await PomodoroApi.UpdateTaskStatusAsync(taskId, "InProgress");
+        if (updated is null) { _errorMessage = "Impossible de mettre à jour le statut."; return; }
+        UpdateLocalTask(updated);
+    }
+
+    private async Task CompleteLinkedTask(Guid taskId)
+    {
+        _errorMessage = null;
+        var updated = await PomodoroApi.UpdateTaskStatusAsync(taskId, "Done");
+        if (updated is null) { _errorMessage = "Impossible de compléter la tâche."; return; }
+        UpdateLocalTask(updated);
+    }
+
+    private async Task OnNewTaskKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newTaskTitle))
+            await CreateTask();
+    }
+
+    // ── Timer internals ───────────────────────────────────────────────────
+    private void InitTimer(PomodoroSessionDto session)
+    {
+        _totalSeconds = session.PlannedDurationMinutes * 60;
+
+        if (session.StartedAt.HasValue)
+        {
+            var elapsed = (int)(DateTime.UtcNow - session.StartedAt.Value).TotalSeconds;
+            _remainingSeconds = Math.Max(0, _totalSeconds - elapsed);
+        }
+        else
+        {
+            _remainingSeconds = _totalSeconds;
+        }
+    }
+
+    private async Task StartTimerLoop()
+    {
+        await StopTimer();
+        _timerCts = new CancellationTokenSource();
+        var token = _timerCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            try
+            {
+                while (await timer.WaitForNextTickAsync(token))
+                {
+                    _remainingSeconds = Math.Max(0, _remainingSeconds - 1);
+                    await InvokeAsync(StateHasChanged);
+
+                    if (_remainingSeconds <= 0)
+                    {
+                        await InvokeAsync(OnTimerCompleted);
+                        break;
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+        }, token);
+    }
+
+    private async Task StopTimer()
+    {
+        if (_timerCts is not null)
+        {
+            await _timerCts.CancelAsync();
+            _timerCts.Dispose();
+            _timerCts = null;
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    private void RefreshLinkedTasks()
+    {
+        if (_session is null) { _linkedTasks = []; return; }
+        var ids = _session.LinkedTaskIds.ToHashSet();
+        _linkedTasks = _allTasks.Where(t => ids.Contains(t.Id)).ToList();
+    }
+
+    private void UpdateLocalTask(TaskDto updated)
+    {
+        var idx = _allTasks.FindIndex(t => t.Id == updated.Id);
+        if (idx >= 0) _allTasks[idx] = updated;
+        RefreshLinkedTasks();
+    }
+
+    private static string BadgeClass(string status) => status switch
+    {
+        "Done"       => "bg-success",
+        "InProgress" => "bg-warning text-dark",
+        _            => "bg-secondary"
+    };
+}

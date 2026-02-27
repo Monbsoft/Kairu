@@ -49,11 +49,60 @@
 | ~~#7~~ | ~~Types de session Pomodoro (Sprint/Pause courte/Pause longue) — UI onglets~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
 | ~~#8~~ | ~~BC Journal — log d'activité quotidien + génération automatique d'entrées~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
 | #9 | BC Tickets — intégration Jira / Linear / GitHub Issues | 📋 Planifié | — |
-| #10 | .NET MAUI — application desktop/mobile | 📋 Planifié | — |
+| ~~#10~~ | ~~.NET MAUI — application desktop/mobile~~ | ~~✅ Livré~~ | ~~2026-02-26~~ |
 
 ---
 
 ## Dernière itération livrée
+
+**#10 — .NET MAUI (application desktop/mobile)** — Livré le 2026-02-26
+
+### Ce qui a été livré
+
+#### Problème
+L'application n'était accessible que via navigateur web (Blazor WASM). Besoin d'une expérience native desktop/mobile avec les mêmes fonctionnalités.
+
+#### Solution appliquée
+
+**Projet .NET MAUI avec Blazor Hybrid** ✅
+- **`Kairudev.Maui`** : nouveau projet .NET 10 MAUI avec `Microsoft.AspNetCore.Components.WebView.Maui`
+- **Multi-plateforme** : cible Windows, Android, iOS, macOS via `TargetFrameworks`
+- **Réutilisation des pages Blazor** : tous les composants copiés depuis `Kairudev.Web`
+  - `Tasks.razor`, `Pomodoro.razor`, `Journal.razor`, `Settings.razor`
+  - `NavMenu.razor` adapté avec émojis pour la navigation
+  - Layout `MainLayout` réutilisé
+
+**Services API clients** ✅
+- **`Services/`** : `TaskApiClient`, `PomodoroApiClient`, `JournalApiClient`
+- **DTOs** : `TaskDto`, `PomodoroDto`, `JournalDto` copiés dans le namespace `Kairudev.Maui.Services`
+- **Configuration** : `appsettings.json` avec `ApiBaseUrl` (défaut : `https://localhost:7056`)
+- **Injection de dépendances** : `MauiProgram.cs` configure `HttpClient` + les 3 clients API
+
+**UI et UX** ✅
+- **Page d'accueil** : redirection automatique vers `/tasks`
+- **Navigation** : menu latéral avec icônes (☑ Tâches, 🍅 Pomodoro, 📖 Journal, ⚙ Paramètres)
+- **CSS** : Bootstrap + styles personnalisés copiés depuis `Kairudev.Web`
+- **Safe area** : support des zones sécurisées iOS (notch)
+
+**Architecture** ✅
+- **Communication API REST uniquement** : MAUI ne connaît rien du Domain/Application
+- **Clean Architecture respectée** : aucune dépendance vers Domain/Application/Infrastructure
+- **Blazor Hybrid** : les composants Razor tournent dans un WebView natif avec accès aux APIs .NET MAUI
+
+### Impact
+- **Application native** disponible sur **Windows, Android, iOS, macOS**
+- **Réutilisation complète** des composants Blazor existants → zéro code UI à refactorer
+- **Même API REST** utilisée par Web et MAUI → cohérence garantie
+- **Prêt pour distribution** : Windows unpackaged, Android/iOS via stores
+
+### Dette technique introduite
+- **Duplication de code** : les pages Blazor et services API sont copiés dans `Kairudev.Maui`
+- **Solution future** : extraire dans `Kairudev.Web.Shared` (Razor Class Library) référencée par Web + MAUI
+- **Priorité** : basse (fonctionne tel quel, refactoring optionnel)
+
+---
+
+## Itération précédente
 
 **#8 — BC Journal (log d'activité quotidien)** — Livré le 2026-02-26
 

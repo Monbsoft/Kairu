@@ -997,3 +997,11 @@ sequenceDiagram
 - **Contexte :** Le projet `Kairudev.Adapters` ne contient que des presenters génériques peu utilisés ; les presenters HTTP vivent déjà dans `Kairudev.Api`.
 - **Décision :** À partir du BC Pomodoro, `Kairudev.Adapters` est supprimé. Les ViewModels et les presenters non-HTTP vivent dans `Kairudev.Application`. Les presenters HTTP restent dans `Kairudev.Api`.
 - **Conséquences :** Solution simplifiée (un projet de moins). Le BC Tasks sera refactorisé en dette technique.
+
+### ADR-008 — .NET MAUI avec Blazor Hybrid et duplication temporaire
+- **Contexte :** Besoin d'une application native desktop/mobile sans refactoring majeur du code Blazor existant.
+- **Décision :** Créer `Kairudev.Maui` avec `Microsoft.AspNetCore.Components.WebView.Maui`. Copier les pages Blazor (Tasks, Pomodoro, Journal, Settings) et les services API clients dans le projet MAUI. Communication uniquement via API REST (même URL que Blazor WASM). Aucune référence aux projets Domain/Application/Infrastructure.
+- **Conséquences :**
+  - **Avantage** : application native fonctionnelle immédiatement, réutilisation totale de l'UI Blazor.
+  - **Dette technique** : duplication de code (pages + services). Solution future : extraire dans une Razor Class Library `Kairudev.Web.Shared` référencée par Web + MAUI.
+  - **Clean Architecture respectée** : MAUI reste un pur adapter, le Domain ignore tout de l'UI.

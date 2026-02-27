@@ -6,6 +6,7 @@
     <Project Path="src/Kairudev.Application/Kairudev.Application.csproj" />
     <Project Path="src/Kairudev.Domain/Kairudev.Domain.csproj" />
     <Project Path="src/Kairudev.Infrastructure/Kairudev.Infrastructure.csproj" />
+    <Project Path="src/Kairudev.Maui/Kairudev.Maui.csproj" />
     <Project Path="src/Kairudev.ServiceDefaults/Kairudev.ServiceDefaults.csproj" />
     <Project Path="src/Kairudev.Web/Kairudev.Web.csproj" />
   </Folder>

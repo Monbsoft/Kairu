@@ -1,0 +1,228 @@
+@page "/journal"
+@using Kairudev.Maui.Services
+@inject JournalApiClient Api
+
+<h2>📖 @GetJournalTitle()</h2>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (entries is null)
+{
+    <p>Chargement…</p>
+}
+else if (entries.Count == 0)
+{
+    <p class="text-muted">Aucune activité enregistrée pour cette date.</p>
+}
+else
+{
+    <div class="journal-list">
+        @foreach (var entry in entries)
+        {
+            <div class="journal-entry mb-3 p-3 border rounded">
+                <div class="d-flex align-items-start">
+                    <div class="entry-time me-3">
+                        <strong class="text-primary">@entry.OccurredAt.ToLocalTime().ToString("HH:mm")</strong>
+                    </div>
+                    <div class="entry-icon me-2">
+                        @GetEventIcon(entry.EventType)
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="entry-label mb-2">
+                            <strong>@GetEventLabel(entry.EventType)</strong>
+                        </div>
+
+                        @if (entry.Comments.Count > 0)
+                        {
+                            <ul class="list-group list-group-flush mt-2">
+                                @foreach (var comment in entry.Comments)
+                                {
+                                    <li class="list-group-item p-2">
+                                        @if (editingCommentId == comment.Id)
+                                        {
+                                            <textarea class="form-control mb-2"
+                                                      @bind="editCommentText"
+                                                      @bind:event="oninput"
+                                                      rows="2"></textarea>
+                                            <button class="btn btn-sm btn-primary me-2" @onclick="() => SaveEditComment(entry.Id, comment.Id)">Enregistrer</button>
+                                            <button class="btn btn-sm btn-secondary" @onclick="CancelEditComment">Annuler</button>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">@comment.Text</div>
+                                                <div class="d-flex gap-1">
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditComment(comment)" title="Modifier">✎</button>
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteComment(entry.Id, comment.Id)" title="Supprimer">✕</button>
+                                                </div>
+                                            </div>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+
+                        @if (addingCommentForEntryId == entry.Id)
+                        {
+                            <div class="mt-2">
+                                <textarea class="form-control mb-2"
+                                          placeholder="Ajouter un commentaire…"
+                                          @bind="newCommentText"
+                                          @bind:event="oninput"
+                                          rows="2"></textarea>
+                                <button class="btn btn-sm btn-primary me-2" @onclick="() => SaveAddComment(entry.Id)">Ajouter</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="CancelAddComment">Annuler</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="() => StartAddComment(entry.Id)">
+                                💬 Ajouter un commentaire
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<JournalEntryDto>? entries;
+    private string? errorMessage;
+
+    private Guid? addingCommentForEntryId;
+    private string newCommentText = string.Empty;
+
+    private Guid? editingCommentId;
+    private string editCommentText = string.Empty;
+
+    protected override async Task OnInitializedAsync() =>
+        await LoadEntries();
+
+    private string GetJournalTitle()
+    {
+        if (entries is null || entries.Count == 0)
+            return "Journal d'aujourd'hui";
+
+        var firstEntryDate = entries.First().OccurredAt.ToLocalTime().Date;
+        var today = DateTime.Today;
+
+        if (firstEntryDate == today)
+            return "Journal d'aujourd'hui";
+
+        if (firstEntryDate == today.AddDays(-1))
+            return "Journal d'hier";
+
+        return $"Journal du {firstEntryDate:dddd d MMMM yyyy}";
+    }
+
+    private async Task LoadEntries()
+    {
+        try
+        {
+            entries = await Api.GetTodayEntriesAsync();
+            errorMessage = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement : {ex.Message}";
+        }
+    }
+
+    private void StartAddComment(Guid entryId)
+    {
+        addingCommentForEntryId = entryId;
+        newCommentText = string.Empty;
+    }
+
+    private async Task SaveAddComment(Guid entryId)
+    {
+        if (string.IsNullOrWhiteSpace(newCommentText))
+            return;
+
+        try
+        {
+            await Api.AddCommentAsync(entryId, newCommentText);
+            addingCommentForEntryId = null;
+            newCommentText = string.Empty;
+            await LoadEntries();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de l'ajout : {ex.Message}";
+        }
+    }
+
+    private void CancelAddComment()
+    {
+        addingCommentForEntryId = null;
+        newCommentText = string.Empty;
+    }
+
+    private void StartEditComment(JournalCommentDto comment)
+    {
+        editingCommentId = comment.Id;
+        editCommentText = comment.Text;
+    }
+
+    private async Task SaveEditComment(Guid entryId, Guid commentId)
+    {
+        if (string.IsNullOrWhiteSpace(editCommentText))
+            return;
+
+        try
+        {
+            await Api.UpdateCommentAsync(entryId, commentId, editCommentText);
+            editingCommentId = null;
+            editCommentText = string.Empty;
+            await LoadEntries();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de la modification : {ex.Message}";
+        }
+    }
+
+    private void CancelEditComment()
+    {
+        editingCommentId = null;
+        editCommentText = string.Empty;
+    }
+
+    private async Task DeleteComment(Guid entryId, Guid commentId)
+    {
+        try
+        {
+            await Api.DeleteCommentAsync(entryId, commentId);
+            await LoadEntries();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de la suppression : {ex.Message}";
+        }
+    }
+
+    private string GetEventIcon(string eventType) => eventType switch
+    {
+        "SprintStarted" => "🍅",
+        "SprintCompleted" => "✅",
+        "SprintInterrupted" => "⏸️",
+        "TaskStarted" => "🚀",
+        "TaskCompleted" => "🎉",
+        _ => "📌"
+    };
+
+    private string GetEventLabel(string eventType) => eventType switch
+    {
+        "SprintStarted" => "Sprint démarré",
+        "SprintCompleted" => "Sprint complété",
+        "SprintInterrupted" => "Sprint interrompu",
+        "TaskStarted" => "Tâche démarrée",
+        "TaskCompleted" => "Tâche complétée",
+        _ => eventType
+    };
+}
