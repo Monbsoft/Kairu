@@ -21,7 +21,12 @@ public sealed class RemoveCommentCommandHandler
 
         var removeResult = entry.RemoveComment(JournalCommentId.From(command.CommentId));
         if (removeResult.IsFailure)
-            return RemoveCommentResult.NotFound();
+        {
+            if (removeResult.Error == DomainErrors.Journal.CommentNotFound)
+                return RemoveCommentResult.NotFound();
+
+            throw new InvalidOperationException($"Unexpected error while removing comment: {removeResult.Error}");
+        }
 
         await _repository.UpdateAsync(entry, cancellationToken);
         return RemoveCommentResult.Success();

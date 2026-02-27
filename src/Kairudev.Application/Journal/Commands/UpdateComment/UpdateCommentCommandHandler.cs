@@ -22,7 +22,16 @@ public sealed class UpdateCommentCommandHandler
 
         var updateResult = entry.UpdateComment(JournalCommentId.From(command.CommentId), command.Text);
         if (updateResult.IsFailure)
-            return UpdateCommentResult.NotFound();
+        {
+            if (updateResult.Error == DomainErrors.Journal.CommentNotFound)
+                return UpdateCommentResult.NotFound();
+
+            if (updateResult.Error == DomainErrors.Journal.EmptyComment ||
+                updateResult.Error == DomainErrors.Journal.CommentTooLong)
+                return UpdateCommentResult.Validation(updateResult.Error);
+
+            throw new InvalidOperationException($"Unexpected error while updating comment: {updateResult.Error}");
+        }
 
         await _repository.UpdateAsync(entry, cancellationToken);
         return UpdateCommentResult.Success(JournalEntryViewModel.From(entry));
