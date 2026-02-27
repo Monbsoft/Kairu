@@ -53,10 +53,14 @@ public sealed class StartSessionCommandHandler
 
         await _sessionRepository.AddAsync(session, cancellationToken);
 
+        var eventType = sessionType == PomodoroSessionType.Sprint
+            ? JournalEventType.SprintStarted
+            : JournalEventType.BreakStarted;
+
         // Generate journal entry
         await _journalHandler.HandleAsync(
             new CreateEntryCommand(
-                JournalEventType.SprintStarted,
+                eventType,
                 session.Id.Value,
                 DateTime.UtcNow),
             cancellationToken);
