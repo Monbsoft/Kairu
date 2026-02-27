@@ -4,11 +4,6 @@
     <ProjectReference Include="..\Kairudev.Domain\Kairudev.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Journal\RemoveJournalComment\" />
-    <Folder Include="Tasks\ListTasks\" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
