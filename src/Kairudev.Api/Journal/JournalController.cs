@@ -1,3 +1,4 @@
+using System.Globalization;
 using Kairudev.Application.Journal.Commands.AddComment;
 using Kairudev.Application.Journal.Commands.RemoveComment;
 using Kairudev.Application.Journal.Commands.UpdateComment;
@@ -41,7 +42,7 @@ public sealed class JournalController : ControllerBase
     [HttpGet("date/{date}")]
     public async Task<IActionResult> GetByDate(string date, CancellationToken ct)
     {
-        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
+        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
             return BadRequest("Format de date invalide. Utiliser yyyy-MM-dd.");
 
         var result = await _getJournalByDate.HandleAsync(new GetJournalByDateQuery(parsedDate), ct);
