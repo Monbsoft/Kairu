@@ -3,9 +3,9 @@
 @inject JournalApiClient Api
 
 <div class="d-flex align-items-center justify-content-between mb-3">
-    <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousDay" title="Jour précédent">←</button>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousDay" title="Jour précédent" aria-label="Jour précédent">←</button>
     <h2 class="mb-0">📖 @GetJournalTitle()</h2>
-    <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" disabled="@IsToday" title="Jour suivant">→</button>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" disabled="@IsToday" title="Jour suivant" aria-label="Jour suivant">→</button>
 </div>
 
 @if (errorMessage is not null)
