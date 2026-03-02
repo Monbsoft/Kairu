@@ -1,33 +1,28 @@
-using Kairudev.Application.Journal.Common;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Domain.Tasks;
 
-namespace Kairudev.Application.Journal.Queries.GetJournalByDate;
+namespace Kairudev.Application.Journal.Common;
 
-public sealed class GetJournalByDateQueryHandler
+internal static class JournalEntryMapper
 {
-    private readonly IJournalEntryRepository _repository;
-    private readonly IPomodoroSessionRepository _sessionRepository;
-    private readonly ITaskRepository _taskRepository;
+    internal static readonly HashSet<JournalEventType> PomodoroEventTypes =
+    [
+        JournalEventType.SprintStarted,
+        JournalEventType.SprintCompleted,
+        JournalEventType.SprintInterrupted,
+        JournalEventType.BreakStarted,
+        JournalEventType.BreakCompleted,
+        JournalEventType.BreakInterrupted,
+    ];
 
-    public GetJournalByDateQueryHandler(
-        IJournalEntryRepository repository,
+    internal static async Task<List<JournalEntryViewModel>> MapToViewModelsAsync(
+        IReadOnlyList<JournalEntry> entries,
         IPomodoroSessionRepository sessionRepository,
-        ITaskRepository taskRepository)
+        ITaskRepository taskRepository,
+        CancellationToken cancellationToken)
     {
-        _repository = repository;
-        _sessionRepository = sessionRepository;
-        _taskRepository = taskRepository;
-    }
-
-    public async Task<GetJournalByDateResult> HandleAsync(
-        GetJournalByDateQuery query,
-        CancellationToken cancellationToken = default)
-    {
-        var entries = await _repository.GetEntriesByDateAsync(query.Date, cancellationToken);
-
-        var allTasks = await _taskRepository.GetAllAsync(cancellationToken);
+        var allTasks = await taskRepository.GetAllAsync(cancellationToken);
         var taskLookup = allTasks.ToDictionary(t => t.Id.Value, t => t.Title.Value);
 
         var sessionIds = entries
@@ -36,7 +31,7 @@ public sealed class GetJournalByDateQueryHandler
             .Distinct()
             .ToList();
 
-        var sessions = await _sessionRepository.GetByIdsAsync(sessionIds, cancellationToken);
+        var sessions = await sessionRepository.GetByIdsAsync(sessionIds, cancellationToken);
         var sessionLookup = sessions.ToDictionary(s => s.Id);
 
         var viewModels = new List<JournalEntryViewModel>(entries.Count);
@@ -58,6 +53,6 @@ public sealed class GetJournalByDateQueryHandler
             viewModels.Add(JournalEntryViewModel.From(entry, taskTitles));
         }
 
-        return new GetJournalByDateResult(viewModels);
+        return viewModels;
     }
 }

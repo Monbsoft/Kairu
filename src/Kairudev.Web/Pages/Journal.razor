@@ -5,12 +5,12 @@
 <div class="notebook">
 
     <div class="notebook-header">
-        <button class="nb-nav-btn" @onclick="PreviousDay" title="Jour précédent">←</button>
+        <button class="nb-nav-btn" @onclick="PreviousDay" title="Jour précédent" aria-label="Jour précédent">←</button>
         <div class="notebook-title">
             <span class="notebook-day">@GetDayName()</span>
             <span class="notebook-date">@GetDateFull()</span>
         </div>
-        <button class="nb-nav-btn" @onclick="NextDay" disabled="@IsToday" title="Jour suivant">→</button>
+        <button class="nb-nav-btn" @onclick="NextDay" disabled="@IsToday" title="Jour suivant" aria-label="Jour suivant">→</button>
     </div>
 
     <div class="notebook-body">

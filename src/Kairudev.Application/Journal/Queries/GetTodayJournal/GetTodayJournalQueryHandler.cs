@@ -11,16 +11,6 @@ public sealed class GetTodayJournalQueryHandler
     private readonly IPomodoroSessionRepository _sessionRepository;
     private readonly ITaskRepository _taskRepository;
 
-    private static readonly HashSet<JournalEventType> PomodoroEventTypes =
-    [
-        JournalEventType.SprintStarted,
-        JournalEventType.SprintCompleted,
-        JournalEventType.SprintInterrupted,
-        JournalEventType.BreakStarted,
-        JournalEventType.BreakCompleted,
-        JournalEventType.BreakInterrupted,
-    ];
-
     public GetTodayJournalQueryHandler(
         IJournalEntryRepository repository,
         IPomodoroSessionRepository sessionRepository,
