@@ -5,11 +5,12 @@
 <div class="notebook">
 
     <div class="notebook-header">
+        <button class="nb-nav-btn" @onclick="PreviousDay" title="Jour précédent">←</button>
         <div class="notebook-title">
             <span class="notebook-day">@GetDayName()</span>
             <span class="notebook-date">@GetDateFull()</span>
         </div>
-        <div class="notebook-subtitle">Journal de bord</div>
+        <button class="nb-nav-btn" @onclick="NextDay" disabled="@IsToday" title="Jour suivant">→</button>
     </div>
 
     <div class="notebook-body">
@@ -27,8 +28,11 @@
         {
             <div class="notebook-empty">
                 <div class="notebook-empty-icon">📓</div>
-                <p class="text-muted fst-italic mb-1">Aucune activité enregistrée aujourd'hui.</p>
-                <p class="text-muted small">Démarrez un sprint Pomodoro pour voir apparaître vos entrées ici.</p>
+                <p class="text-muted fst-italic mb-1">Aucune activité enregistrée ce jour.</p>
+                @if (IsToday)
+                {
+                    <p class="text-muted small">Démarrez un sprint Pomodoro pour voir apparaître vos entrées ici.</p>
+                }
             </div>
         }
         else
@@ -163,15 +167,46 @@
     .notebook-header {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         border-radius: 8px 8px 0 0;
-        padding: 1.25rem 1.75rem;
-        display: flex;
+        padding: 1.25rem 1.25rem;
+        display: grid;
+        grid-template-columns: 40px 1fr 40px;
         align-items: center;
-        justify-content: space-between;
+        gap: 0.5rem;
     }
 
     .notebook-title {
         display: flex;
         flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* ── Boutons navigation ──────────────────────────────── */
+    .nb-nav-btn {
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        color: #ccd6f6;
+        font-size: 1rem;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        padding: 0;
+        justify-self: center;
+    }
+
+    .nb-nav-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .nb-nav-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
     }
 
     .notebook-day {
@@ -413,6 +448,9 @@
     private Guid? editingCommentId;
     private string editCommentText = string.Empty;
 
+    private DateOnly _displayDate = DateOnly.FromDateTime(DateTime.Today);
+    private bool IsToday => _displayDate == DateOnly.FromDateTime(DateTime.Today);
+
     private static readonly System.Globalization.CultureInfo Fr = new("fr-FR");
 
     protected override async Task OnInitializedAsync() =>
@@ -422,7 +460,9 @@
     {
         try
         {
-            entries = await Api.GetTodayEntriesAsync();
+            entries = IsToday
+                ? await Api.GetTodayEntriesAsync()
+                : await Api.GetEntriesByDateAsync(_displayDate);
             errorMessage = null;
         }
         catch (Exception ex)
@@ -431,19 +471,30 @@
         }
     }
 
+    // ── Navigation ────────────────────────────────────────
+
+    private async Task PreviousDay()
+    {
+        _displayDate = _displayDate.AddDays(-1);
+        await LoadEntries();
+    }
+
+    private async Task NextDay()
+    {
+        if (!IsToday)
+        {
+            _displayDate = _displayDate.AddDays(1);
+            await LoadEntries();
+        }
+    }
+
     // ── Helpers date ──────────────────────────────────────
 
-    private string GetDayName()
-    {
-        var date = entries?.Count > 0 ? entries[0].OccurredAt.ToLocalTime().Date : DateTime.Today;
-        return date.ToString("dddd", Fr).ToUpperInvariant();
-    }
+    private string GetDayName() =>
+        _displayDate.ToString("dddd", Fr).ToUpperInvariant();
 
-    private string GetDateFull()
-    {
-        var date = entries?.Count > 0 ? entries[0].OccurredAt.ToLocalTime().Date : DateTime.Today;
-        return date.ToString("d MMMM yyyy", Fr);
-    }
+    private string GetDateFull() =>
+        _displayDate.ToString("d MMMM yyyy", Fr);
 
     // ── Helpers entrée ────────────────────────────────────
 
@@ -472,9 +523,9 @@
 
     private static string GetEventLabel(JournalEntryDto entry) => entry.EventType switch
     {
-        "SprintStarted"     => "Sprint démarré",
-        "SprintCompleted"   => "Sprint complété",
-        "SprintInterrupted" => "Sprint interrompu",
+        "SprintStarted"     => entry.Sequence.HasValue ? $"Sprint #{entry.Sequence} démarré"    : "Sprint démarré",
+        "SprintCompleted"   => entry.Sequence.HasValue ? $"Sprint #{entry.Sequence} complété"   : "Sprint complété",
+        "SprintInterrupted" => entry.Sequence.HasValue ? $"Sprint #{entry.Sequence} interrompu" : "Sprint interrompu",
         "BreakStarted"      => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} démarrée"    : "Pause démarrée",
         "BreakCompleted"    => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} terminée"    : "Pause terminée",
         "BreakInterrupted"  => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} interrompue" : "Pause interrompue",

@@ -7,25 +7,30 @@
 
 ## Résumé état actuel
 
-**Dernière itération : #11c — Nettoyage post-migration CQRS** (2026-02-XX)
+**Dernière itération : #12 — Journal : historique + numérotation sprints** (2026-03-02)
 
 **Bounded Contexts opérationnels :**
 - **Tasks** : 6 Commands/Queries — **Architecture CQRS** ✅
 - **Pomodoro** : 10 Commands/Queries — **Architecture CQRS** ✅
-- **Journal** : 5 Commands/Queries — **Architecture CQRS** ✅
-- **Settings** : 2 Commands/Queries (🆕 thème paramétrable) — **Architecture CQRS** ✅
+- **Journal** : 6 Commands/Queries — **Architecture CQRS** ✅ (🆕 GetJournalByDate)
+- **Settings** : 3 Commands/Queries — **Architecture CQRS** ✅
 
 **Architecture Application Layer :**
 - ✅ **CQRS sans MediatR** : Commands (écriture) + Queries (lecture)
 - ✅ **Handlers** retournent directement des `Result` (plus de Presenters)
 - ✅ **Injection directe** dans les Controllers (pas de mediator)
-- ✅ **23 use cases** (6 Tasks + 10 Pomodoro + 5 Journal + 2 Settings)
+- ✅ **25 use cases** (6 Tasks + 10 Pomodoro + 6 Journal + 3 Settings)
 
-**Tests :** 154 au total, **tous migrés vers pattern CQRS** ✅
+**Fonctionnalités Journal :**
+- ✅ Navigation historique : flèches ← → dans la page journal (Web + MAUI)
+- ✅ Numérotation des sprints : Sprint #1 démarré, Sprint #2 complété, etc.
+- ✅ Numérotation des pauses (déjà existant) + alignement MAUI
+
+**Tests :** 128 au total ✅ (71 Domain + 40 Application + 17 Infrastructure)
 
 **Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite + EF Core, .NET Aspire
 
-**Migrations :** 6 migrations (InitialCreate, AddPomodoro, AddJournalEntry, AddTaskDescription, AddSessionType, **AddUserSettings**)
+**Migrations :** 6 migrations (InitialCreate, AddPomodoro, AddJournalEntry, AddTaskDescription, AddSessionType, AddUserSettings)
 
 ---
 
@@ -51,11 +56,78 @@
 | ~~#11~~ | ~~Migration CQRS sans MediatR — refactoring architectural~~ | ~~✅ Livré~~ | ~~2026-02-XX~~ |
 | ~~#11b~~ | ~~BC Settings + Thème Dark paramétrable~~ | ~~✅ Livré~~ | ~~2026-02-XX~~ |
 | ~~#11c~~ | ~~Nettoyage post-migration CQRS~~ | ~~✅ Livré~~ | ~~2026-02-XX~~ |
-| #12 | BC Tickets — intégration Jira / Linear / GitHub Issues | 📋 Planifié | — |
+| ~~bugfix~~ | ~~Pomodoro UI bloqué après fin de session (timer 0:00 + bouton Interrompre persistant)~~ | ~~✅ Livré~~ | ~~2026-03-02~~ |
+| ~~#12~~ | ~~Journal : navigation historique + numérotation sprints~~ | ~~✅ Livré~~ | ~~2026-03-02~~ |
+| #13 | BC Tickets — intégration Jira / Linear / GitHub Issues | 📋 Planifié | — |
 
 ---
 
 ## Dernière itération livrée
+
+**#12 — Journal : navigation historique + numérotation sprints** — Livré le 2026-03-02
+
+### Ce qui a été livré
+
+#### Problème
+- La page Journal affichait uniquement le journal du jour, sans pouvoir consulter les jours précédents
+- Les sprints n'étaient pas numérotés (affichait "Sprint démarré" au lieu de "Sprint #1 démarré")
+
+#### Solution appliquée
+
+**Application (CQRS)** ✅
+- `GetJournalByDateQueryHandler` : nouveau handler pour récupérer les entrées d'une date arbitraire
+- `CreateEntryCommandHandler` étendu : numérotation des sprints (`SprintStarted/Completed/Interrupted`) basée sur `count(SprintStarted today)`
+  - Fix : `sequence = null` si aucun sprint démarré (évite la valeur 0 aberrante)
+
+**API** ✅
+- Endpoint `GET /api/journal/date/{date}` (format `yyyy-MM-dd`)
+- `GetJournalByDateQueryHandler` enregistré en DI
+
+**UI Web (Blazor WASM)** ✅
+- Flèches ← → dans l'en-tête (bouton → désactivé si "aujourd'hui")
+- `_displayDate` : état de navigation, défaut = aujourd'hui
+- `GetEventLabel` : Sprint #N démarré/complété/interrompu + Pause #N (déjà existant)
+- Message vide générique + hint uniquement si aujourd'hui
+
+**UI MAUI (Blazor Hybrid)** ✅
+- Même navigation ← → avec `_displayDate`
+- `JournalEntryDto` complété : ajout `int? Sequence` et `List<string> LinkedTaskTitles`
+- `GetEventLabel` mis à jour (sprint numérotés + pauses) + tâches liées affichées
+- Icônes pauses (`☕ BreakStarted`, `🌿 BreakCompleted`, `⚡ BreakInterrupted`) ajoutées
+
+**Tests** ✅ (+14 tests, total 128)
+- `CreateEntryCommandHandlerTests` : 8 tests (séquences Sprint #1, #2, Completed, Interrupted, Break, null)
+- `GetJournalByDateQueryHandlerTests` : 6 tests (filtrage date, liste vide, séquence préservée)
+
+### Impact
+- L'utilisateur peut maintenant naviguer dans l'historique jour par jour
+- Les sprints sont clairement numérotés dans la timeline
+- Alignement complet Web ↔ MAUI sur les DTOs et les labels
+
+### Dette technique introduite
+Aucune ✅
+
+---
+
+## Itération précédente : bugfix Pomodoro
+
+**bugfix — Pomodoro UI bloqué après fin de session** — Livré le 2026-03-02
+
+#### Problème
+Après la fin automatique d'un sprint ou d'une pause (timer → 0:00), l'UI restait bloquée : onglets de sélection invisibles, bouton "Interrompre" toujours visible.
+
+#### Cause racine
+`CompleteSessionAsync()` désérialisait le corps de la réponse 204 NoContent → `null` → retour anticipé sans mise à jour de `_session`.
+
+#### Fix
+- `CompleteSessionAsync()` → `Task<bool>` (pas de corps à désérialiser)
+- Suppression de `PomodoroCompleteResultDto` (Web + MAUI)
+- Ajout de `_suggestedNextSessionType` dédié (séparé de `_selectedSessionType`)
+- Alignement MAUI sur le pattern Web
+
+---
+
+## Itération précédente (avant bugfix)
 
 **#11c — Nettoyage post-migration CQRS** — Livré le 2026-02-XX
 

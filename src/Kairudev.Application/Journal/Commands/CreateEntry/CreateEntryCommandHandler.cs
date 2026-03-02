@@ -20,11 +20,24 @@ public sealed class CreateEntryCommandHandler
         try
         {
             int? sequence = null;
+            var today = DateOnly.FromDateTime(command.OccurredAt);
+
             if (command.EventType == JournalEventType.BreakCompleted)
             {
-                var today = DateOnly.FromDateTime(command.OccurredAt);
                 var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.BreakCompleted, today, cancellationToken);
                 sequence = count + 1;
+            }
+            else if (command.EventType == JournalEventType.SprintStarted)
+            {
+                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.SprintStarted, today, cancellationToken);
+                sequence = count + 1;
+            }
+            else if (command.EventType is JournalEventType.SprintCompleted or JournalEventType.SprintInterrupted)
+            {
+                // Le sprint était déjà démarré : count(SprintStarted today) = numéro du sprint courant
+                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.SprintStarted, today, cancellationToken);
+                if (count > 0)
+                    sequence = count;
             }
 
             var entry = JournalEntry.Create(command.EventType, command.ResourceId, command.OccurredAt, sequence);

@@ -2,6 +2,7 @@ using Kairudev.Application.Journal.Commands.AddComment;
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Application.Journal.Commands.RemoveComment;
 using Kairudev.Application.Journal.Commands.UpdateComment;
+using Kairudev.Application.Journal.Queries.GetJournalByDate;
 using Kairudev.Application.Journal.Queries.GetTodayJournal;
 using Kairudev.Application.Pomodoro.Commands.CompleteSession;
 using Kairudev.Application.Pomodoro.Commands.CreateTaskDuringSession;
@@ -57,6 +58,7 @@ builder.Services.AddScoped<UpdateTaskStatusCommandHandler>();
 
 // Journal — Command & Query Handlers
 builder.Services.AddScoped<GetTodayJournalQueryHandler>();
+builder.Services.AddScoped<GetJournalByDateQueryHandler>();
 builder.Services.AddScoped<AddCommentCommandHandler>();
 builder.Services.AddScoped<UpdateCommentCommandHandler>();
 builder.Services.AddScoped<RemoveCommentCommandHandler>();

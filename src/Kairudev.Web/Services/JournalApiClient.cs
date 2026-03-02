@@ -16,6 +16,14 @@ public sealed class JournalApiClient
             ?? [];
     }
 
+    public async Task<List<JournalEntryDto>> GetEntriesByDateAsync(DateOnly date)
+    {
+        var response = await _http.GetAsync($"api/journal/date/{date:yyyy-MM-dd}");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<JournalEntryDto>>()
+            ?? [];
+    }
+
     public async Task<Guid> AddCommentAsync(Guid entryId, string text)
     {
         var body = new AddCommentRequest(text);

@@ -2,7 +2,11 @@
 @using Kairudev.Maui.Services
 @inject JournalApiClient Api
 
-<h2>📖 @GetJournalTitle()</h2>
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousDay" title="Jour précédent">←</button>
+    <h2 class="mb-0">📖 @GetJournalTitle()</h2>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="NextDay" disabled="@IsToday" title="Jour suivant">→</button>
+</div>
 
 @if (errorMessage is not null)
 {
@@ -15,7 +19,7 @@
 }
 else if (entries.Count == 0)
 {
-    <p class="text-muted">Aucune activité enregistrée pour cette date.</p>
+    <p class="text-muted">Aucune activité enregistrée ce jour.</p>
 }
 else
 {
@@ -32,8 +36,18 @@ else
                     </div>
                     <div class="flex-grow-1">
                         <div class="entry-label mb-2">
-                            <strong>@GetEventLabel(entry.EventType)</strong>
+                            <strong>@GetEventLabel(entry)</strong>
                         </div>
+
+                        @if (entry.LinkedTaskTitles.Count > 0)
+                        {
+                            <ul class="list-unstyled small text-muted ms-2 mb-1">
+                                @foreach (var title in entry.LinkedTaskTitles)
+                                {
+                                    <li>→ @title</li>
+                                }
+                            </ul>
+                        }
 
                         @if (entry.Comments.Count > 0)
                         {
@@ -100,36 +114,51 @@ else
     private Guid? editingCommentId;
     private string editCommentText = string.Empty;
 
+    private DateOnly _displayDate = DateOnly.FromDateTime(DateTime.Today);
+    private bool IsToday => _displayDate == DateOnly.FromDateTime(DateTime.Today);
+
     protected override async Task OnInitializedAsync() =>
         await LoadEntries();
 
     private string GetJournalTitle()
     {
-        if (entries is null || entries.Count == 0)
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (_displayDate == today)
             return "Journal d'aujourd'hui";
-
-        var firstEntryDate = entries.First().OccurredAt.ToLocalTime().Date;
-        var today = DateTime.Today;
-
-        if (firstEntryDate == today)
-            return "Journal d'aujourd'hui";
-
-        if (firstEntryDate == today.AddDays(-1))
+        if (_displayDate == today.AddDays(-1))
             return "Journal d'hier";
-
-        return $"Journal du {firstEntryDate:dddd d MMMM yyyy}";
+        return $"Journal du {_displayDate.ToString("dddd d MMMM yyyy")}";
     }
 
     private async Task LoadEntries()
     {
         try
         {
-            entries = await Api.GetTodayEntriesAsync();
+            entries = IsToday
+                ? await Api.GetTodayEntriesAsync()
+                : await Api.GetEntriesByDateAsync(_displayDate);
             errorMessage = null;
         }
         catch (Exception ex)
         {
             errorMessage = $"Erreur lors du chargement : {ex.Message}";
+        }
+    }
+
+    // ── Navigation ─────────────────────────────────────────
+
+    private async Task PreviousDay()
+    {
+        _displayDate = _displayDate.AddDays(-1);
+        await LoadEntries();
+    }
+
+    private async Task NextDay()
+    {
+        if (!IsToday)
+        {
+            _displayDate = _displayDate.AddDays(1);
+            await LoadEntries();
         }
     }
 
@@ -206,23 +235,29 @@ else
         }
     }
 
-    private string GetEventIcon(string eventType) => eventType switch
+    private static string GetEventIcon(string eventType) => eventType switch
     {
-        "SprintStarted" => "🍅",
-        "SprintCompleted" => "✅",
+        "SprintStarted"     => "🍅",
+        "SprintCompleted"   => "✅",
         "SprintInterrupted" => "⏸️",
-        "TaskStarted" => "🚀",
-        "TaskCompleted" => "🎉",
-        _ => "📌"
+        "BreakStarted"      => "☕",
+        "BreakCompleted"    => "🌿",
+        "BreakInterrupted"  => "⚡",
+        "TaskStarted"       => "🚀",
+        "TaskCompleted"     => "🎉",
+        _                   => "📌"
     };
 
-    private string GetEventLabel(string eventType) => eventType switch
+    private static string GetEventLabel(JournalEntryDto entry) => entry.EventType switch
     {
-        "SprintStarted" => "Sprint démarré",
-        "SprintCompleted" => "Sprint complété",
-        "SprintInterrupted" => "Sprint interrompu",
-        "TaskStarted" => "Tâche démarrée",
-        "TaskCompleted" => "Tâche complétée",
-        _ => eventType
+        "SprintStarted"     => entry.Sequence.HasValue ? $"Sprint #{entry.Sequence} démarré"    : "Sprint démarré",
+        "SprintCompleted"   => entry.Sequence.HasValue ? $"Sprint #{entry.Sequence} complété"   : "Sprint complété",
+        "SprintInterrupted" => entry.Sequence.HasValue ? $"Sprint #{entry.Sequence} interrompu" : "Sprint interrompu",
+        "BreakStarted"      => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} démarrée"    : "Pause démarrée",
+        "BreakCompleted"    => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} terminée"    : "Pause terminée",
+        "BreakInterrupted"  => entry.Sequence.HasValue ? $"Pause #{entry.Sequence} interrompue" : "Pause interrompue",
+        "TaskStarted"       => "Tâche démarrée",
+        "TaskCompleted"     => "Tâche complétée",
+        _                   => entry.EventType
     };
 }
