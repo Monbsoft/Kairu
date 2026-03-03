@@ -54,8 +54,11 @@ flowchart LR
             UC18(["Consulter les paramètres"])
         end
 
-        subgraph Tickets["Bounded Context : Tickets (à venir)"]
-            UC9(["Synchroniser les tickets"])
+        subgraph Tickets["Bounded Context : Tickets"]
+            UCT1(["Lister les tickets Jira assignés"])
+            UCT2(["Lier un ticket Jira à une tâche"])
+            UCT3(["Délier un ticket Jira d'une tâche"])
+            UCT4(["Configurer les credentials Jira"])
         end
     end
 
@@ -958,9 +961,75 @@ sequenceDiagram
 
 ---
 
-## Bounded Context : Tickets (à venir)
+## Bounded Context : Tickets — Intégration Jira ✅ (itération #13)
 
-> Use cases à détailler lors de l'itération concernée.
+**Concept clé :** intégration en lecture avec Jira Cloud. Les tickets sont récupérés en direct depuis l'API Jira (pas de stockage local). Seul le lien `JiraTicketKey` (ex. `PROJ-123`) est persisté sur une tâche Kairudev.
+
+### UC-T01 — Lister les tickets Jira assignés à l'utilisateur
+
+**Acteur principal :** Développeur
+**Préconditions :** Credentials Jira configurés (BaseUrl, Email, ApiToken)
+**Postconditions :** Liste des tickets affichée (clé, résumé, statut, priorité)
+
+**Scénario nominal :**
+1. L'utilisateur ouvre la page Tickets
+2. Le système récupère les credentials depuis `UserSettings`
+3. `JiraApiClient` appelle `GET /rest/api/3/search?jql=assignee=currentUser()`
+4. La liste est affichée avec clé, résumé, statut et priorité
+
+**Scénarios d'exception :**
+- E1 : Credentials non configurés → message "Configurer dans les paramètres"
+- E2 : Erreur réseau ou API → message d'erreur HTTP
+
+### UC-T02 — Lier un ticket Jira à une tâche Kairudev
+
+**Acteur principal :** Développeur
+**Préconditions :** La tâche existe
+**Postconditions :** `JiraTicketKey` persisté sur la tâche
+
+**Scénario nominal :**
+1. L'utilisateur saisit une clé Jira (`PROJ-123`) sur une tâche
+2. Le système valide le format (`^[A-Z]+-\d+$`)
+3. La clé est persistée et affichée comme badge sur la tâche
+
+**Scénarios alternatifs :**
+- A1 : Tâche déjà liée → la clé est remplacée
+
+**Critères d'acceptance :**
+- [x] Format `[A-Z]+-[0-9]+` validé côté Domain
+- [x] Persisté en base, survit au redémarrage
+
+### UC-T03 — Délier un ticket Jira d'une tâche
+
+**Acteur principal :** Développeur
+**Postconditions :** `JiraTicketKey = null` sur la tâche
+
+### UC-T04 — Configurer les credentials Jira (dans Settings)
+
+**Acteur principal :** Développeur
+**Postconditions :** BaseUrl, Email, ApiToken persistés dans `UserSettings`
+
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant UI as Page Tickets
+    participant API as Api REST
+    participant H as GetAssignedJiraTicketsQueryHandler
+    participant S as JiraApiClient
+    participant J as Jira Cloud API
+
+    U->>UI: Ouvre la page Tickets
+    UI->>API: GET /api/tickets/assigned
+    API->>H: Handle(query)
+    H->>H: GetAsync() → UserSettings
+    H->>S: GetAssignedTicketsAsync(url, email, token)
+    S->>J: GET /rest/api/3/search?jql=assignee=currentUser()
+    J-->>S: [{key, summary, status, priority}]
+    S-->>H: Result<List<JiraTicketDto>>
+    H-->>API: Result
+    API-->>UI: 200 [{key, summary, status}]
+    UI-->>U: Liste des tickets
+```
 
 ---
 
@@ -1008,6 +1077,14 @@ sequenceDiagram
   - **Avantage** : application native fonctionnelle immédiatement, réutilisation totale de l'UI Blazor.
   - **Dette technique** : duplication de code (pages + services). Solution future : extraire dans une Razor Class Library `Kairudev.Web.Shared` référencée par Web + MAUI.
   - **Clean Architecture respectée** : MAUI reste un pur adapter, le Domain ignore tout de l'UI.
+
+### ADR-009 — Intégration Jira en lecture directe (pas de stockage local des tickets)
+- **Contexte :** Le BC Tickets doit afficher les tickets Jira assignés à l'utilisateur. Deux options : synchronisation périodique en base, ou lecture directe à la demande.
+- **Décision :** Lecture directe depuis l'API Jira Cloud REST v3 (`HttpClient` + Basic Auth). Seul le lien `JiraTicketKey` (ex. `PROJ-123`) est persisté sur `DeveloperTask`. Les données Jira (résumé, statut, priorité) ne sont jamais stockées localement.
+- **Conséquences :**
+  - **Avantage** : toujours à jour, pas de migration ni de job de synchro, implémentation minimale.
+  - **Contrainte** : requiert une connexion à Jira pour afficher les tickets ; la page Tickets est vide si Jira est inaccessible.
+  - **JiraApiToken stocké en clair** dans SQLite — dette technique à adresser (chiffrement) dans une itération future.
 
 ---
 
