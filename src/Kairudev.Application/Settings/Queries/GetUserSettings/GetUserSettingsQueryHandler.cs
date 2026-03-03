@@ -16,9 +16,16 @@ public sealed class GetUserSettingsQueryHandler
     {
         var settings = await _repository.GetAsync();
 
+        var jiraConfigured = !string.IsNullOrWhiteSpace(settings.JiraBaseUrl)
+            && !string.IsNullOrWhiteSpace(settings.JiraEmail)
+            && !string.IsNullOrWhiteSpace(settings.JiraApiToken);
+
         var viewModel = new UserSettingsViewModel(
             ThemePreference: settings.ThemePreference.ToString(),
-            RingtonePreference: settings.RingtonePreference.ToString()
+            RingtonePreference: settings.RingtonePreference.ToString(),
+            JiraBaseUrl: settings.JiraBaseUrl,
+            JiraEmail: settings.JiraEmail,
+            JiraConfigured: jiraConfigured
         );
 
         return GetUserSettingsResult.Success(viewModel);

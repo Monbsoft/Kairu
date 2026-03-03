@@ -6,4 +6,5 @@ public sealed record TaskDto(
     string? Description,
     string Status,
     DateTime CreatedAt,
-    DateTime? CompletedAt);
+    DateTime? CompletedAt,
+    string? JiraTicketKey);

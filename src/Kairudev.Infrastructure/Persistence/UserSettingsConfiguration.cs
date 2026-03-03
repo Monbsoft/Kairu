@@ -25,5 +25,9 @@ internal sealed class UserSettingsConfiguration : IEntityTypeConfiguration<UserS
             .HasMaxLength(20)
             .IsRequired()
             .HasDefaultValue(RingtonePreference.AlarmClock);
+
+        builder.Property(s => s.JiraBaseUrl).HasMaxLength(500);
+        builder.Property(s => s.JiraEmail).HasMaxLength(200);
+        builder.Property(s => s.JiraApiToken).HasMaxLength(500);
     }
 }

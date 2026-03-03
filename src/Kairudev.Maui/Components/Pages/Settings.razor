@@ -2,6 +2,7 @@
 @using Kairudev.Maui.Services
 @inject PomodoroApiClient PomodoroApi
 @inject SettingsApiClient SettingsApi
+@inject TicketApiClient TicketApi
 @inject IJSRuntime JSRuntime
 
 <h2>⚙ Paramètres</h2>
@@ -25,6 +26,40 @@ else
                 </select>
                 <div class="form-text">Le thème sera appliqué immédiatement et sauvegardé.</div>
             </div>
+        </div>
+
+        <hr class="my-4" />
+
+        <!-- Jira Section -->
+        <div class="mb-5">
+            <h4>Jira</h4>
+            @if (_jiraConfigured)
+            {
+                <div class="alert alert-success">Jira est configure.</div>
+            }
+            <div class="mb-3">
+                <label class="form-label">URL de base Jira</label>
+                <input type="url" class="form-control" @bind="_jiraBaseUrl" placeholder="https://monentreprise.atlassian.net" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email Jira</label>
+                <input type="email" class="form-control" @bind="_jiraEmail" placeholder="prenom.nom@entreprise.com" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Token API Jira</label>
+                <input type="password" class="form-control" @bind="_jiraApiToken" placeholder="Votre token API Jira" />
+            </div>
+            @if (_jiraSuccessMessage is not null)
+            {
+                <div class="alert alert-success">@_jiraSuccessMessage</div>
+            }
+            @if (_jiraErrorMessage is not null)
+            {
+                <div class="alert alert-danger">@_jiraErrorMessage</div>
+            }
+            <button class="btn btn-primary" @onclick="SaveJiraSettingsAsync" disabled="@_savingJira">
+                @(_savingJira ? "Enregistrement..." : "Enregistrer Jira")
+            </button>
         </div>
 
         <hr class="my-4" />
@@ -90,6 +125,15 @@ else
     private SettingsForm _form = new();
     private string _selectedTheme = "System";
 
+    // Jira settings state
+    private string? _jiraBaseUrl;
+    private string? _jiraEmail;
+    private string? _jiraApiToken;
+    private bool _jiraConfigured;
+    private bool _savingJira;
+    private string? _jiraSuccessMessage;
+    private string? _jiraErrorMessage;
+
     private sealed class SettingsForm
     {
         public int SprintDuration { get; set; } = 25;
@@ -108,11 +152,14 @@ else
             _form.LongBreakDuration = pomodoroSettings.LongBreakDurationMinutes;
         }
 
-        // Load theme preference
+        // Load theme preference and Jira settings
         var userSettings = await SettingsApi.GetSettingsAsync();
         if (userSettings is not null)
         {
             _selectedTheme = userSettings.ThemePreference;
+            _jiraBaseUrl = userSettings.JiraBaseUrl;
+            _jiraEmail = userSettings.JiraEmail;
+            _jiraConfigured = userSettings.JiraConfigured;
             await ApplyTheme(_selectedTheme);
         }
 
@@ -185,6 +232,34 @@ else
         finally
         {
             _saving = false;
+        }
+    }
+
+    private async Task SaveJiraSettingsAsync()
+    {
+        _savingJira = true;
+        _jiraSuccessMessage = null;
+        _jiraErrorMessage = null;
+
+        try
+        {
+            var success = await TicketApi.SaveJiraSettingsAsync(_jiraBaseUrl, _jiraEmail, _jiraApiToken);
+            if (success)
+            {
+                _jiraSuccessMessage = "Parametres Jira enregistres avec succes !";
+                _jiraConfigured = !string.IsNullOrWhiteSpace(_jiraBaseUrl)
+                    && !string.IsNullOrWhiteSpace(_jiraEmail)
+                    && !string.IsNullOrWhiteSpace(_jiraApiToken);
+                _jiraApiToken = null;
+            }
+            else
+            {
+                _jiraErrorMessage = "Impossible d'enregistrer les parametres Jira.";
+            }
+        }
+        finally
+        {
+            _savingJira = false;
         }
     }
 

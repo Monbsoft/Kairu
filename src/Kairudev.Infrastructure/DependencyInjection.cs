@@ -1,7 +1,9 @@
+using Kairudev.Application.Tickets;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Domain.Settings;
 using Kairudev.Domain.Tasks;
+using Kairudev.Infrastructure.Jira;
 using Kairudev.Infrastructure.Persistence;
 using Kairudev.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +25,8 @@ public static class DependencyInjection
         services.AddScoped<IPomodoroSettingsRepository, SqlitePomodoroSettingsRepository>();
         services.AddScoped<IJournalEntryRepository, SqliteJournalEntryRepository>();
         services.AddScoped<IUserSettingsRepository, SqliteUserSettingsRepository>();
+
+        services.AddHttpClient<IJiraTicketService, JiraApiClient>();
 
         return services;
     }

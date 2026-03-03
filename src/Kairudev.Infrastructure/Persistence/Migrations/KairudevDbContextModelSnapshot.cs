@@ -97,6 +97,18 @@ namespace Kairudev.Infrastructure.Persistence.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("JiraApiToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JiraBaseUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JiraEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("RingtonePreference")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -127,6 +139,10 @@ namespace Kairudev.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JiraTicketKey")
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")

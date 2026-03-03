@@ -2,7 +2,12 @@ using System.Net.Http.Json;
 
 namespace Kairudev.Maui.Services;
 
-public sealed record UserSettingsDto(string ThemePreference);
+public sealed record UserSettingsDto(
+    string ThemePreference,
+    string RingtonePreference,
+    string? JiraBaseUrl,
+    string? JiraEmail,
+    bool JiraConfigured);
 
 public sealed class SettingsApiClient
 {

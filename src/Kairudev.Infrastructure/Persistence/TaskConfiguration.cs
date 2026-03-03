@@ -37,5 +37,11 @@ internal sealed class TaskConfiguration : IEntityTypeConfiguration<DeveloperTask
 
         builder.Property(t => t.CreatedAt).IsRequired();
         builder.Property(t => t.CompletedAt);
+
+        builder.Property(t => t.JiraTicketKey)
+            .HasConversion(
+                key => key != null ? key.Value : null,
+                value => value != null ? JiraTicketKey.Create(value).Value : null)
+            .HasMaxLength(JiraTicketKey.MaxLength);
     }
 }

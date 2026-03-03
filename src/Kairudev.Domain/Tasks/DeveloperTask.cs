@@ -18,6 +18,7 @@ public sealed class DeveloperTask : AggregateRoot<TaskId>
     public TaskStatus Status { get; private set; }
     public DateTime CreatedAt { get; }
     public DateTime? CompletedAt { get; private set; }
+    public JiraTicketKey? JiraTicketKey { get; private set; }
 
     public static DeveloperTask Create(TaskTitle title, TaskDescription? description, DateTime createdAt) =>
         new(TaskId.New(), title, description, createdAt);
@@ -60,4 +61,8 @@ public sealed class DeveloperTask : AggregateRoot<TaskId>
         Title = title;
         Description = description;
     }
+
+    public void LinkJiraTicket(JiraTicketKey key) => JiraTicketKey = key;
+
+    public void UnlinkJiraTicket() => JiraTicketKey = null;
 }

@@ -2,6 +2,8 @@ using Kairudev.Application.Tasks.Commands.AddTask;
 using Kairudev.Application.Tasks.Commands.ChangeTaskStatus;
 using Kairudev.Application.Tasks.Commands.CompleteTask;
 using Kairudev.Application.Tasks.Commands.DeleteTask;
+using Kairudev.Application.Tasks.Commands.LinkJiraTicket;
+using Kairudev.Application.Tasks.Commands.UnlinkJiraTicket;
 using Kairudev.Application.Tasks.Commands.UpdateTask;
 using Kairudev.Application.Tasks.Queries.ListTasks;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +20,8 @@ public sealed class TasksController : ControllerBase
     private readonly DeleteTaskCommandHandler _deleteTask;
     private readonly ChangeTaskStatusCommandHandler _changeStatus;
     private readonly UpdateTaskCommandHandler _updateTask;
+    private readonly LinkJiraTicketCommandHandler _linkJiraTicket;
+    private readonly UnlinkJiraTicketCommandHandler _unlinkJiraTicket;
 
     public TasksController(
         AddTaskCommandHandler addTask,
@@ -25,7 +29,9 @@ public sealed class TasksController : ControllerBase
         CompleteTaskCommandHandler completeTask,
         DeleteTaskCommandHandler deleteTask,
         ChangeTaskStatusCommandHandler changeStatus,
-        UpdateTaskCommandHandler updateTask)
+        UpdateTaskCommandHandler updateTask,
+        LinkJiraTicketCommandHandler linkJiraTicket,
+        UnlinkJiraTicketCommandHandler unlinkJiraTicket)
     {
         _addTask = addTask;
         _listTasks = listTasks;
@@ -33,6 +39,8 @@ public sealed class TasksController : ControllerBase
         _deleteTask = deleteTask;
         _changeStatus = changeStatus;
         _updateTask = updateTask;
+        _linkJiraTicket = linkJiraTicket;
+        _unlinkJiraTicket = unlinkJiraTicket;
     }
 
     [HttpGet]
@@ -114,7 +122,39 @@ public sealed class TasksController : ControllerBase
             _ => StatusCode(500)
         };
     }
+
+    [HttpPut("{id:guid}/jira-ticket")]
+    public async Task<IActionResult> LinkJiraTicket(
+        Guid id,
+        [FromBody] LinkJiraTicketBody body,
+        CancellationToken ct)
+    {
+        var result = await _linkJiraTicket.HandleAsync(
+            new LinkJiraTicketCommand(id, body.JiraTicketKey), ct);
+
+        return result switch
+        {
+            { IsSuccess: true } => NoContent(),
+            { IsNotFound: true } => NotFound(),
+            _ => BadRequest(new { error = result.Error })
+        };
+    }
+
+    [HttpDelete("{id:guid}/jira-ticket")]
+    public async Task<IActionResult> UnlinkJiraTicket(Guid id, CancellationToken ct)
+    {
+        var result = await _unlinkJiraTicket.HandleAsync(
+            new UnlinkJiraTicketCommand(id), ct);
+
+        return result switch
+        {
+            { IsSuccess: true } => NoContent(),
+            { IsNotFound: true } => NotFound(),
+            _ => StatusCode(500)
+        };
+    }
 }
 
 public sealed record ChangeTaskStatusBody(string NewStatus);
 public sealed record UpdateTaskBody(string Title, string? Description);
+public sealed record LinkJiraTicketBody(string JiraTicketKey);

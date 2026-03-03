@@ -10,5 +10,9 @@ public static class DomainErrors
         public const string AlreadyCompleted = "Task is already completed.";
         public const string NotFound = "Task not found.";
         public const string SameStatus = "Task is already in the requested status.";
+        public const string EmptyJiraTicketKey = "Jira ticket key cannot be empty.";
+        public const string JiraTicketKeyTooLong = "Jira ticket key cannot exceed 50 characters.";
+        public const string InvalidJiraTicketKeyFormat = "Jira ticket key must follow the format PROJECT-123.";
+        public const string JiraNotConfigured = "Jira is not configured. Please set your Jira credentials in Settings.";
     }
 }

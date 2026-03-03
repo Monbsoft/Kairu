@@ -14,6 +14,7 @@ using Kairudev.Application.Pomodoro.Commands.UpdateTaskStatus;
 using Kairudev.Application.Pomodoro.Queries.GetCurrentSession;
 using Kairudev.Application.Pomodoro.Queries.GetSettings;
 using Kairudev.Application.Pomodoro.Queries.GetSuggestedSessionType;
+using Kairudev.Application.Settings.Commands.SaveJiraSettings;
 using Kairudev.Application.Settings.Commands.SaveRingtonePreference;
 using Kairudev.Application.Settings.Commands.SaveThemePreference;
 using Kairudev.Application.Settings.Queries.GetUserSettings;
@@ -21,8 +22,11 @@ using Kairudev.Application.Tasks.Commands.AddTask;
 using Kairudev.Application.Tasks.Commands.ChangeTaskStatus;
 using Kairudev.Application.Tasks.Commands.CompleteTask;
 using Kairudev.Application.Tasks.Commands.DeleteTask;
+using Kairudev.Application.Tasks.Commands.LinkJiraTicket;
+using Kairudev.Application.Tasks.Commands.UnlinkJiraTicket;
 using Kairudev.Application.Tasks.Commands.UpdateTask;
 using Kairudev.Application.Tasks.Queries.ListTasks;
+using Kairudev.Application.Tickets.Queries.GetAssignedJiraTickets;
 using Kairudev.Infrastructure;
 using Kairudev.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -68,6 +72,14 @@ builder.Services.AddScoped<CreateEntryCommandHandler>(); // Used internally by T
 builder.Services.AddScoped<GetUserSettingsQueryHandler>();
 builder.Services.AddScoped<SaveThemePreferenceCommandHandler>();
 builder.Services.AddScoped<SaveRingtonePreferenceCommandHandler>();
+builder.Services.AddScoped<SaveJiraSettingsCommandHandler>();
+
+// Tickets — Query Handlers
+builder.Services.AddScoped<GetAssignedJiraTicketsQueryHandler>();
+
+// Tasks — Jira link/unlink handlers
+builder.Services.AddScoped<LinkJiraTicketCommandHandler>();
+builder.Services.AddScoped<UnlinkJiraTicketCommandHandler>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

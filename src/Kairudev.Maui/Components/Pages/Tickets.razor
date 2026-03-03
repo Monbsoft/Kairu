@@ -1,0 +1,57 @@
+@page "/tickets"
+@using Kairudev.Maui.Services
+@inject TicketApiClient TicketClient
+
+<h3>Tickets Jira</h3>
+
+@if (_loading)
+{
+    <p>Chargement...</p>
+}
+else if (_notConfigured)
+{
+    <div class="alert alert-warning">
+        Jira n'est pas configure. <a href="/settings">Configurer dans les parametres</a>.
+    </div>
+}
+else if (_tickets.Count == 0)
+{
+    <p class="text-muted">Aucun ticket assigne.</p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var ticket in _tickets)
+        {
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="fw-bold text-primary">@ticket.Key</span>
+                        <span class="ms-2">@ticket.Summary</span>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-secondary me-1">@ticket.Status</span>
+                        @if (ticket.Priority is not null)
+                        {
+                            <span class="badge bg-light text-dark">@ticket.Priority</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _notConfigured = false;
+    private List<JiraTicketDto> _tickets = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var (notConfigured, tickets) = await TicketClient.GetAssignedAsync();
+        _notConfigured = notConfigured;
+        _tickets = tickets;
+        _loading = false;
+    }
+}

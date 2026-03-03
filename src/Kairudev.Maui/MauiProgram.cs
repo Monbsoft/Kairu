@@ -34,6 +34,7 @@ public static class MauiProgram
 		builder.Services.AddScoped<PomodoroApiClient>();
 		builder.Services.AddScoped<JournalApiClient>();
 		builder.Services.AddScoped<SettingsApiClient>();
+		builder.Services.AddScoped<TicketApiClient>();
 
 		return builder.Build();
 	}

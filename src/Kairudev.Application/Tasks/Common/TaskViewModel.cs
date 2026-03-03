@@ -8,7 +8,8 @@ public sealed record TaskViewModel(
     string? Description,
     string Status,
     DateTime CreatedAt,
-    DateTime? CompletedAt)
+    DateTime? CompletedAt,
+    string? JiraTicketKey)
 {
     public static TaskViewModel From(DeveloperTask task) =>
         new(
@@ -17,5 +18,6 @@ public sealed record TaskViewModel(
             task.Description?.Value,
             task.Status.ToString(),
             task.CreatedAt,
-            task.CompletedAt);
+            task.CompletedAt,
+            task.JiraTicketKey?.Value);
 }

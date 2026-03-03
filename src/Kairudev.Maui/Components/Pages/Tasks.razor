@@ -1,6 +1,7 @@
 @page "/tasks"
 @using Kairudev.Maui.Services
 @inject TaskApiClient Api
+@inject TicketApiClient TicketApi
 
 <h2>Tâches du jour</h2>
 
@@ -61,10 +62,26 @@ else
                         <div class="flex-grow-1">
                             <div class="@(task.Status == "Done" ? "text-decoration-line-through text-muted" : "")">
                                 <strong>@task.Title</strong>
+                                @if (!string.IsNullOrWhiteSpace(task.JiraTicketKey))
+                                {
+                                    <span class="badge bg-primary ms-2">@task.JiraTicketKey</span>
+                                }
                             </div>
                             @if (!string.IsNullOrWhiteSpace(task.Description))
                             {
                                 <small class="text-muted d-block mt-1">@task.Description</small>
+                            }
+                            @if (linkingTaskId == task.Id)
+                            {
+                                <div class="d-flex gap-2 mt-1">
+                                    <input class="form-control form-control-sm"
+                                           style="max-width: 150px"
+                                           placeholder="PROJ-123"
+                                           @bind="linkJiraKeyInput"
+                                           @bind:event="oninput" />
+                                    <button class="btn btn-sm btn-primary" @onclick="() => SaveJiraLink(task.Id)">Lier</button>
+                                    <button class="btn btn-sm btn-secondary" @onclick="CancelJiraLink">Annuler</button>
+                                </div>
                             }
                         </div>
                         <div class="d-flex gap-2 align-items-center ms-3">
@@ -73,6 +90,14 @@ else
                             {
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(task)" title="Modifier">✎</button>
                                 <button class="btn btn-sm btn-success" @onclick="() => CompleteTask(task.Id)" title="Compléter">✓</button>
+                            }
+                            @if (string.IsNullOrWhiteSpace(task.JiraTicketKey))
+                            {
+                                <button class="btn btn-sm btn-outline-info" @onclick="() => StartJiraLink(task.Id)" title="Lier Jira">J+</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => UnlinkJira(task.Id)" title="Delirer Jira">J-</button>
                             }
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTask(task.Id)" title="Supprimer">✕</button>
                         </div>
@@ -92,6 +117,9 @@ else
     private Guid? editingTaskId;
     private string editTitle = string.Empty;
     private string editDescription = string.Empty;
+
+    private Guid? linkingTaskId;
+    private string linkJiraKeyInput = string.Empty;
 
     protected override async Task OnInitializedAsync() =>
         tasks = await Api.GetAllAsync();
@@ -168,6 +196,43 @@ else
     {
         if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(newTitle))
             await AddTask();
+    }
+
+    private void StartJiraLink(Guid taskId)
+    {
+        linkingTaskId = taskId;
+        linkJiraKeyInput = string.Empty;
+    }
+
+    private async Task SaveJiraLink(Guid taskId)
+    {
+        errorMessage = null;
+        if (string.IsNullOrWhiteSpace(linkJiraKeyInput)) return;
+
+        if (await TicketApi.LinkAsync(taskId, linkJiraKeyInput.Trim()))
+        {
+            tasks = await Api.GetAllAsync();
+            CancelJiraLink();
+        }
+        else
+        {
+            errorMessage = "Erreur lors de la liaison Jira. Verifiez la cle saisie.";
+        }
+    }
+
+    private async Task UnlinkJira(Guid taskId)
+    {
+        errorMessage = null;
+        if (await TicketApi.UnlinkAsync(taskId))
+            tasks = await Api.GetAllAsync();
+        else
+            errorMessage = "Erreur lors de la suppression du lien Jira.";
+    }
+
+    private void CancelJiraLink()
+    {
+        linkingTaskId = null;
+        linkJiraKeyInput = string.Empty;
     }
 
     private static string StatusBadgeClass(string status) => status switch

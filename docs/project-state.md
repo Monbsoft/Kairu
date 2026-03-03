@@ -7,30 +7,33 @@
 
 ## Résumé état actuel
 
-**Dernière itération : #12 — Journal : historique + numérotation sprints** (2026-03-02)
+**Dernière itération : #13 — BC Tickets — Intégration Jira** (2026-03-03)
 
 **Bounded Contexts opérationnels :**
-- **Tasks** : 6 Commands/Queries — **Architecture CQRS** ✅
+- **Tasks** : 8 Commands/Queries — **Architecture CQRS** ✅ (🆕 LinkJiraTicket, UnlinkJiraTicket)
 - **Pomodoro** : 10 Commands/Queries — **Architecture CQRS** ✅
-- **Journal** : 6 Commands/Queries — **Architecture CQRS** ✅ (🆕 GetJournalByDate)
-- **Settings** : 3 Commands/Queries — **Architecture CQRS** ✅
+- **Journal** : 6 Commands/Queries — **Architecture CQRS** ✅
+- **Settings** : 4 Commands/Queries — **Architecture CQRS** ✅ (🆕 SaveJiraSettings)
+- **Tickets** : 1 Query — **Architecture CQRS** ✅ (🆕 GetAssignedJiraTickets)
 
 **Architecture Application Layer :**
 - ✅ **CQRS sans MediatR** : Commands (écriture) + Queries (lecture)
 - ✅ **Handlers** retournent directement des `Result` (plus de Presenters)
 - ✅ **Injection directe** dans les Controllers (pas de mediator)
-- ✅ **25 use cases** (6 Tasks + 10 Pomodoro + 6 Journal + 3 Settings)
+- ✅ **29 use cases** (8 Tasks + 10 Pomodoro + 6 Journal + 4 Settings + 1 Tickets)
 
-**Fonctionnalités Journal :**
-- ✅ Navigation historique : flèches ← → dans la page journal (Web + MAUI)
-- ✅ Numérotation des sprints : Sprint #1 démarré, Sprint #2 complété, etc.
-- ✅ Numérotation des pauses (déjà existant) + alignement MAUI
+**Fonctionnalités Tickets (Jira) :**
+- ✅ Page Tickets : liste les tickets Jira assignés à l'utilisateur (Web + MAUI)
+- ✅ Lier un ticket Jira à une tâche Kairudev (clé `PROJ-123`, format validé)
+- ✅ Délier un ticket Jira d'une tâche
+- ✅ Configuration Jira dans les Paramètres (BaseUrl + Email + ApiToken)
+- ✅ Gestion du cas "Jira non configuré" (message explicite + lien vers Paramètres)
 
-**Tests :** 128 au total ✅ (71 Domain + 40 Application + 17 Infrastructure)
+**Tests :** 155 au total ✅ (90 Domain + 48 Application + 17 Infrastructure)
 
 **Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite + EF Core, .NET Aspire
 
-**Migrations :** 6 migrations (InitialCreate, AddPomodoro, AddJournalEntry, AddTaskDescription, AddSessionType, AddUserSettings)
+**Migrations :** 8 migrations (InitialCreate, AddPomodoro, AddJournalEntry, AddTaskDescription, AddSessionType, AddUserSettings, AddJiraTicketKeyToTasks, AddJiraSettingsToUserSettings)
 
 ---
 
@@ -58,11 +61,73 @@
 | ~~#11c~~ | ~~Nettoyage post-migration CQRS~~ | ~~✅ Livré~~ | ~~2026-02-XX~~ |
 | ~~bugfix~~ | ~~Pomodoro UI bloqué après fin de session (timer 0:00 + bouton Interrompre persistant)~~ | ~~✅ Livré~~ | ~~2026-03-02~~ |
 | ~~#12~~ | ~~Journal : navigation historique + numérotation sprints~~ | ~~✅ Livré~~ | ~~2026-03-02~~ |
-| #13 | BC Tickets — intégration Jira / Linear / GitHub Issues | 📋 Planifié | — |
+| ~~#13~~ | ~~BC Tickets — intégration Jira (liste, lien tâche, config)~~ | ~~✅ Livré~~ | ~~2026-03-03~~ |
 
 ---
 
 ## Dernière itération livrée
+
+**#13 — BC Tickets — Intégration Jira** — Livré le 2026-03-03
+
+### Ce qui a été livré
+
+**Domain (Tasks BC — extension)** ✅
+- `JiraTicketKey` : Value Object (format `^[A-Z]+-\d+$`, max 50 chars, validé)
+- `DeveloperTask.JiraTicketKey?` : propriété nullable
+- `DeveloperTask.LinkJiraTicket(key)` + `UnlinkJiraTicket()`
+- `DomainErrors.Tasks` : 4 nouvelles constantes d'erreur Jira
+
+**Domain (Settings BC — extension)** ✅
+- `UserSettings.JiraBaseUrl?`, `JiraEmail?`, `JiraApiToken?`
+- `UserSettings.UpdateJiraSettings(url, email, token)`
+
+**Application** ✅
+- `IJiraTicketService` + `JiraTicketDto` (BC Tickets)
+- `GetAssignedJiraTicketsQueryHandler` : récupère les tickets Jira via l'API
+- `LinkJiraTicketCommandHandler` : lie un ticket Jira à une tâche
+- `UnlinkJiraTicketCommandHandler` : délie un ticket Jira d'une tâche
+- `SaveJiraSettingsCommandHandler` : persiste les credentials Jira
+- `TaskViewModel` enrichi : `JiraTicketKey?`
+- `UserSettingsViewModel` enrichi : `JiraBaseUrl?`, `JiraEmail?`, `JiraConfigured` (sans token)
+
+**Infrastructure** ✅
+- `JiraApiClient` : HTTP Basic Auth, appel `GET /rest/api/3/search?jql=assignee=currentUser()`
+- Migration `AddJiraTicketKeyToTasks` : colonne `JiraTicketKey` nullable (max 50) sur `Tasks`
+- Migration `AddJiraSettingsToUserSettings` : 3 colonnes nullable sur `UserSettings`
+- `TaskConfiguration` mis à jour : mapping `JiraTicketKey`
+- `UserSettingsConfiguration` mis à jour : mapping 3 champs Jira
+- `DependencyInjection` : `AddHttpClient<IJiraTicketService, JiraApiClient>()`
+
+**API** ✅
+- `TicketsController` : `GET /api/tickets/assigned`
+- `TasksController` étendu : `PUT /api/tasks/{id}/jira-ticket` + `DELETE /api/tasks/{id}/jira-ticket`
+- `SettingsController` étendu : `PUT /api/settings/jira`
+
+**UI Web (Blazor WASM)** ✅
+- Page `/tickets` : liste des tickets assignés avec clé, titre, statut, priorité
+- `Tasks.razor` : badge clé Jira + boutons Lier/Délier
+- `Settings.razor` : section credentials Jira (BaseUrl, Email, ApiToken)
+- `NavMenu.razor` : lien 🎫 Tickets
+
+**UI MAUI (Blazor Hybrid)** ✅
+- Identique au Web : page Tickets + Tasks + Settings + NavMenu
+
+**Tests** ✅ (+27 tests, total 155)
+- Domain : `JiraTicketKeyTests` (7 tests) + `DeveloperTaskJiraTests` (5 tests)
+- Application : `LinkJiraTicketCommandHandlerTests` (3 tests) + `UnlinkJiraTicketCommandHandlerTests` (3 tests)
+
+### Impact
+- L'utilisateur voit ses tickets Jira assignés depuis Kairudev
+- Chaque tâche peut être liée à un ticket Jira (persisté en base)
+- Les credentials Jira sont configurables depuis l'UI sans redémarrage
+
+### Dette technique introduite
+- `JiraApiToken` stocké en clair dans SQLite — à chiffrer dans une itération future
+- Pas de cache sur les appels Jira (appel API à chaque chargement de page)
+
+---
+
+## Itération précédente
 
 **#12 — Journal : navigation historique + numérotation sprints** — Livré le 2026-03-02
 
