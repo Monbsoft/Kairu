@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,6 +13,11 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
 
         builder.Property(e => e.Id)
             .HasConversion(id => id.Value, value => JournalEntryId.From(value));
+
+        builder.Property(e => e.OwnerId)
+            .HasConversion(v => v.Value, v => UserId.From(v))
+            .HasMaxLength(50)
+            .IsRequired(false); // nullable for migration compatibility
 
         builder.Property(e => e.OccurredAt).IsRequired();
 

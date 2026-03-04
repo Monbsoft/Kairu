@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
@@ -8,20 +9,25 @@ public sealed class InterruptSessionCommandHandler
 {
     private readonly IPomodoroSessionRepository _sessionRepository;
     private readonly CreateEntryCommandHandler _journalHandler;
+    private readonly ICurrentUserService _currentUserService;
 
     public InterruptSessionCommandHandler(
         IPomodoroSessionRepository sessionRepository,
-        CreateEntryCommandHandler journalHandler)
+        CreateEntryCommandHandler journalHandler,
+        ICurrentUserService currentUserService)
     {
         _sessionRepository = sessionRepository;
         _journalHandler = journalHandler;
+        _currentUserService = currentUserService;
     }
 
     public async Task<InterruptSessionResult> HandleAsync(
         InterruptSessionCommand command,
         CancellationToken cancellationToken = default)
     {
-        var session = await _sessionRepository.GetActiveAsync(cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var session = await _sessionRepository.GetActiveAsync(userId, cancellationToken);
         if (session is null)
             return InterruptSessionResult.Failure("No active session");
 
@@ -40,7 +46,8 @@ public sealed class InterruptSessionCommandHandler
             new CreateEntryCommand(
                 eventType,
                 session.Id.Value,
-                DateTime.UtcNow),
+                DateTime.UtcNow,
+                userId),
             cancellationToken);
 
         return InterruptSessionResult.Success();

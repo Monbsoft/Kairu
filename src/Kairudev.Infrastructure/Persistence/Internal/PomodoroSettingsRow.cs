@@ -1,9 +1,9 @@
 namespace Kairudev.Infrastructure.Persistence.Internal;
 
-/// <summary>EF Core row for the singleton PomodoroSettings (id always = 1).</summary>
+/// <summary>EF Core row for PomodoroSettings — one row per user identified by UserId string.</summary>
 internal sealed class PomodoroSettingsRow
 {
-    public int Id { get; set; } = 1;
+    public string UserId { get; set; } = string.Empty;
     public int SprintDurationMinutes { get; set; }
     public int ShortBreakDurationMinutes { get; set; }
     public int LongBreakDurationMinutes { get; set; }

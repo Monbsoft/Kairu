@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
@@ -9,22 +10,27 @@ public sealed class CompleteSessionCommandHandler
     private readonly IPomodoroSessionRepository _sessionRepository;
     private readonly IPomodoroSettingsRepository _settingsRepository;
     private readonly CreateEntryCommandHandler _journalHandler;
+    private readonly ICurrentUserService _currentUserService;
 
     public CompleteSessionCommandHandler(
         IPomodoroSessionRepository sessionRepository,
         IPomodoroSettingsRepository settingsRepository,
-        CreateEntryCommandHandler journalHandler)
+        CreateEntryCommandHandler journalHandler,
+        ICurrentUserService currentUserService)
     {
         _sessionRepository = sessionRepository;
         _settingsRepository = settingsRepository;
         _journalHandler = journalHandler;
+        _currentUserService = currentUserService;
     }
 
     public async Task<CompleteSessionResult> HandleAsync(
         CompleteSessionCommand command,
         CancellationToken cancellationToken = default)
     {
-        var session = await _sessionRepository.GetActiveAsync(cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var session = await _sessionRepository.GetActiveAsync(userId, cancellationToken);
         if (session is null)
             return CompleteSessionResult.Failure("No active session");
 
@@ -43,7 +49,8 @@ public sealed class CompleteSessionCommandHandler
             new CreateEntryCommand(
                 eventType,
                 session.Id.Value,
-                DateTime.UtcNow),
+                DateTime.UtcNow,
+                userId),
             cancellationToken);
 
         return CompleteSessionResult.Success();

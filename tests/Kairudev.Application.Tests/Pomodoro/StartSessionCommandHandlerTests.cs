@@ -1,6 +1,8 @@
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Application.Pomodoro.Commands.StartSession;
+using Kairudev.Application.Tests.Common;
 using Kairudev.Application.Tests.Journal;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
 
@@ -16,13 +18,17 @@ public sealed class StartSessionCommandHandlerTests
     public StartSessionCommandHandlerTests()
     {
         var journalHandler = new CreateEntryCommandHandler(_journalRepository);
-        _sut = new StartSessionCommandHandler(_sessionRepository, _settingsRepository, journalHandler);
+        _sut = new StartSessionCommandHandler(
+            _sessionRepository,
+            _settingsRepository,
+            journalHandler,
+            new FakeCurrentUserService());
     }
 
     [Fact]
     public async Task Should_ReturnFailure_When_ASessionIsAlreadyActive()
     {
-        var existing = PomodoroSession.Create(PomodoroSessionType.Sprint, 25);
+        var existing = PomodoroSession.Create(PomodoroSessionType.Sprint, 25, UserId.From("test-github-id-123"));
         existing.Start(DateTime.UtcNow);
         _sessionRepository.Sessions.Add(existing);
 

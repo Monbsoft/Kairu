@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Domain.Pomodoro;
 
 namespace Kairudev.Application.Pomodoro.Queries.GetSuggestedSessionType;
@@ -6,26 +7,31 @@ public sealed class GetSuggestedSessionTypeQueryHandler
 {
     private readonly IPomodoroSessionRepository _sessionRepository;
     private readonly IPomodoroSettingsRepository _settingsRepository;
+    private readonly ICurrentUserService _currentUserService;
 
     public GetSuggestedSessionTypeQueryHandler(
         IPomodoroSessionRepository sessionRepository,
-        IPomodoroSettingsRepository settingsRepository)
+        IPomodoroSettingsRepository settingsRepository,
+        ICurrentUserService currentUserService)
     {
         _sessionRepository = sessionRepository;
         _settingsRepository = settingsRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<GetSuggestedSessionTypeResult> HandleAsync(
         GetSuggestedSessionTypeQuery query,
         CancellationToken cancellationToken = default)
     {
-        var settings = await _settingsRepository.GetAsync(cancellationToken);
-        var latestSession = await _sessionRepository.GetLatestCompletedTodayAsync(cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var settings = await _settingsRepository.GetByUserIdAsync(userId, cancellationToken);
+        var latestSession = await _sessionRepository.GetLatestCompletedTodayAsync(userId, cancellationToken);
 
         PomodoroSessionType suggestedType;
         if (latestSession?.SessionType == PomodoroSessionType.Sprint)
         {
-            var sprintsToday = await _sessionRepository.GetCompletedSprintsTodayCountAsync(cancellationToken);
+            var sprintsToday = await _sessionRepository.GetCompletedSprintsTodayCountAsync(userId, cancellationToken);
             // Dernier cycle était un sprint → suggérer une pause
             suggestedType = sprintsToday % PomodoroSettings.SprintsBeforeLongBreak == 0
                 ? PomodoroSessionType.LongBreak

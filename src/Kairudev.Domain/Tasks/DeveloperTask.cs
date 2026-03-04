@@ -1,18 +1,21 @@
 using Kairudev.Domain.Common;
+using Kairudev.Domain.Identity;
 
 namespace Kairudev.Domain.Tasks;
 
 public sealed class DeveloperTask : AggregateRoot<TaskId>
 {
-    private DeveloperTask(TaskId id, TaskTitle title, TaskDescription? description, DateTime createdAt)
+    private DeveloperTask(TaskId id, UserId ownerId, TaskTitle title, TaskDescription? description, DateTime createdAt)
         : base(id)
     {
+        OwnerId = ownerId;
         Title = title;
         Description = description;
         Status = TaskStatus.Pending;
         CreatedAt = createdAt;
     }
 
+    public UserId OwnerId { get; private set; } = default!;
     public TaskTitle Title { get; private set; }
     public TaskDescription? Description { get; private set; }
     public TaskStatus Status { get; private set; }
@@ -20,8 +23,8 @@ public sealed class DeveloperTask : AggregateRoot<TaskId>
     public DateTime? CompletedAt { get; private set; }
     public JiraTicketKey? JiraTicketKey { get; private set; }
 
-    public static DeveloperTask Create(TaskTitle title, TaskDescription? description, DateTime createdAt) =>
-        new(TaskId.New(), title, description, createdAt);
+    public static DeveloperTask Create(TaskTitle title, TaskDescription? description, DateTime createdAt, UserId ownerId) =>
+        new(TaskId.New(), ownerId, title, description, createdAt);
 
     public Result Complete()
     {

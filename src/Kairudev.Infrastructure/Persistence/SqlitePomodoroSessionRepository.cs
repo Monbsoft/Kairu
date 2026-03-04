@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Pomodoro;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,9 +30,11 @@ internal sealed class SqlitePomodoroSessionRepository : IPomodoroSessionReposito
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<PomodoroSession?> GetActiveAsync(CancellationToken cancellationToken = default) =>
+    public async Task<PomodoroSession?> GetActiveAsync(UserId userId, CancellationToken cancellationToken = default) =>
         await _context.PomodoroSessions
-            .FirstOrDefaultAsync(s => s.Status == PomodoroSessionStatus.Active, cancellationToken);
+            .FirstOrDefaultAsync(
+                s => s.Status == PomodoroSessionStatus.Active && s.OwnerId == userId,
+                cancellationToken);
 
     public async Task UpdateAsync(PomodoroSession session, CancellationToken cancellationToken = default)
     {
@@ -39,34 +42,37 @@ internal sealed class SqlitePomodoroSessionRepository : IPomodoroSessionReposito
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<int> GetCompletedTodayCountAsync(CancellationToken cancellationToken = default)
+    public async Task<int> GetCompletedTodayCountAsync(UserId userId, CancellationToken cancellationToken = default)
     {
         var today = DateTime.UtcNow.Date;
         return await _context.PomodoroSessions
             .CountAsync(
-                s => s.Status == PomodoroSessionStatus.Completed
-                     && s.EndedAt.HasValue
-                     && s.EndedAt.Value.Date == today,
-                cancellationToken);
-    }
-
-    public async Task<int> GetCompletedSprintsTodayCountAsync(CancellationToken cancellationToken = default)
-    {
-        var today = DateTime.UtcNow.Date;
-        return await _context.PomodoroSessions
-            .CountAsync(
-                s => s.SessionType == PomodoroSessionType.Sprint
+                s => s.OwnerId == userId
                      && s.Status == PomodoroSessionStatus.Completed
                      && s.EndedAt.HasValue
                      && s.EndedAt.Value.Date == today,
                 cancellationToken);
     }
 
-    public async Task<PomodoroSession?> GetLatestCompletedTodayAsync(CancellationToken cancellationToken = default)
+    public async Task<int> GetCompletedSprintsTodayCountAsync(UserId userId, CancellationToken cancellationToken = default)
     {
         var today = DateTime.UtcNow.Date;
         return await _context.PomodoroSessions
-            .Where(s => s.Status == PomodoroSessionStatus.Completed
+            .CountAsync(
+                s => s.OwnerId == userId
+                     && s.SessionType == PomodoroSessionType.Sprint
+                     && s.Status == PomodoroSessionStatus.Completed
+                     && s.EndedAt.HasValue
+                     && s.EndedAt.Value.Date == today,
+                cancellationToken);
+    }
+
+    public async Task<PomodoroSession?> GetLatestCompletedTodayAsync(UserId userId, CancellationToken cancellationToken = default)
+    {
+        var today = DateTime.UtcNow.Date;
+        return await _context.PomodoroSessions
+            .Where(s => s.OwnerId == userId
+                        && s.Status == PomodoroSessionStatus.Completed
                         && s.EndedAt.HasValue
                         && s.EndedAt.Value.Date == today)
             .OrderByDescending(s => s.EndedAt)

@@ -1,13 +1,16 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 
 namespace Kairudev.Domain.Tests.Journal;
 
 public sealed class JournalEntryTests
 {
+    private static readonly UserId OwnerId = UserId.From("test-user");
+
     private static JournalEntry CreateEntry(
         JournalEventType eventType = JournalEventType.SprintStarted,
         Guid? resourceId = null) =>
-        JournalEntry.Create(eventType, resourceId ?? Guid.NewGuid(), DateTime.UtcNow);
+        JournalEntry.Create(eventType, resourceId ?? Guid.NewGuid(), DateTime.UtcNow, OwnerId);
 
     // ── Create ────────────────────────────────────────────────────────────────
 
@@ -16,7 +19,7 @@ public sealed class JournalEntryTests
     {
         var resourceId = Guid.NewGuid();
         var before = DateTime.UtcNow;
-        var entry = JournalEntry.Create(JournalEventType.TaskCompleted, resourceId, DateTime.UtcNow);
+        var entry = JournalEntry.Create(JournalEventType.TaskCompleted, resourceId, DateTime.UtcNow, OwnerId);
         var after = DateTime.UtcNow;
 
         Assert.Equal(JournalEventType.TaskCompleted, entry.EventType);

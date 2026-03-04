@@ -1,28 +1,30 @@
 using Kairudev.Domain.Common;
+using Kairudev.Domain.Identity;
 
 namespace Kairudev.Domain.Settings;
 
 /// <summary>
 /// Aggregate root representing user settings.
-/// In this single-user application, there is only one instance with Id = 1.
+/// One instance per user, identified by UserId.
 /// </summary>
-public sealed class UserSettings : AggregateRoot<int>
+public sealed class UserSettings : AggregateRoot<UserId>
 {
-    public const int SingletonId = 1;
-
     public ThemePreference ThemePreference { get; private set; }
     public RingtonePreference RingtonePreference { get; private set; }
     public string? JiraBaseUrl { get; private set; }
     public string? JiraEmail { get; private set; }
     public string? JiraApiToken { get; private set; }
 
+    // Parameterless constructor required by EF Core for materialization
+    private UserSettings() : base(UserId.From(string.Empty)) { }
+
     private UserSettings(
-        int id,
+        UserId userId,
         ThemePreference themePreference,
         RingtonePreference ringtonePreference,
         string? jiraBaseUrl,
         string? jiraEmail,
-        string? jiraApiToken) : base(id)
+        string? jiraApiToken) : base(userId)
     {
         ThemePreference = themePreference;
         RingtonePreference = ringtonePreference;
@@ -32,11 +34,11 @@ public sealed class UserSettings : AggregateRoot<int>
     }
 
     /// <summary>
-    /// Creates the default user settings instance.
+    /// Creates default user settings for a given user.
     /// </summary>
-    public static UserSettings CreateDefault()
+    public static UserSettings CreateDefault(UserId userId)
     {
-        return new UserSettings(SingletonId, ThemePreference.System, RingtonePreference.AlarmClock, null, null, null);
+        return new UserSettings(userId, ThemePreference.System, RingtonePreference.AlarmClock, null, null, null);
     }
 
     /// <summary>
@@ -69,13 +71,13 @@ public sealed class UserSettings : AggregateRoot<int>
     /// Reconstitutes a UserSettings from persistence.
     /// </summary>
     public static UserSettings Reconstitute(
-        int id,
+        UserId userId,
         ThemePreference themePreference,
         RingtonePreference ringtonePreference,
         string? jiraBaseUrl,
         string? jiraEmail,
         string? jiraApiToken)
     {
-        return new UserSettings(id, themePreference, ringtonePreference, jiraBaseUrl, jiraEmail, jiraApiToken);
+        return new UserSettings(userId, themePreference, ringtonePreference, jiraBaseUrl, jiraEmail, jiraApiToken);
     }
 }

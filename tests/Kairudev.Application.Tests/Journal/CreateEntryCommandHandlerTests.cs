@@ -1,10 +1,13 @@
 using Kairudev.Application.Journal.Commands.CreateEntry;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 
 namespace Kairudev.Application.Tests.Journal;
 
 public sealed class CreateEntryCommandHandlerTests
 {
+    private static readonly UserId OwnerId = UserId.From("test-github-id-123");
+
     private readonly FakeJournalEntryRepository _repository = new();
     private readonly CreateEntryCommandHandler _sut;
 
@@ -16,7 +19,7 @@ public sealed class CreateEntryCommandHandlerTests
     [Fact]
     public async Task Should_AssignSequence1_When_FirstSprintStartedToday()
     {
-        var command = new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), DateTime.UtcNow);
+        var command = new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), DateTime.UtcNow, OwnerId);
 
         await _sut.HandleAsync(command);
 
@@ -28,8 +31,8 @@ public sealed class CreateEntryCommandHandlerTests
     {
         var today = DateTime.UtcNow;
 
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today));
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today, OwnerId));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today, OwnerId));
 
         Assert.Equal(1, _repository.Entries[0].Sequence);
         Assert.Equal(2, _repository.Entries[1].Sequence);
@@ -43,9 +46,9 @@ public sealed class CreateEntryCommandHandlerTests
         var today = DateTime.UtcNow;
 
         // Sprint #1 démarre
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today, OwnerId));
         // Sprint #1 se complète
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintCompleted, Guid.NewGuid(), today));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintCompleted, Guid.NewGuid(), today, OwnerId));
 
         // count(SprintStarted today) = 1 → Sequence = 1
         Assert.Equal(1, _repository.Entries[1].Sequence);
@@ -56,9 +59,9 @@ public sealed class CreateEntryCommandHandlerTests
     {
         var today = DateTime.UtcNow;
 
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today));
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today));
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintCompleted, Guid.NewGuid(), today));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today, OwnerId));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today, OwnerId));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintCompleted, Guid.NewGuid(), today, OwnerId));
 
         // count(SprintStarted today) = 2 → Sequence = 2
         Assert.Equal(2, _repository.Entries[2].Sequence);
@@ -71,8 +74,8 @@ public sealed class CreateEntryCommandHandlerTests
     {
         var today = DateTime.UtcNow;
 
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today));
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintInterrupted, Guid.NewGuid(), today));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), today, OwnerId));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.SprintInterrupted, Guid.NewGuid(), today, OwnerId));
 
         // count(SprintStarted today) = 1 → Sequence = 1
         Assert.Equal(1, _repository.Entries[1].Sequence);
@@ -85,8 +88,8 @@ public sealed class CreateEntryCommandHandlerTests
     {
         var today = DateTime.UtcNow;
 
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.BreakCompleted, Guid.NewGuid(), today));
-        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.BreakCompleted, Guid.NewGuid(), today));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.BreakCompleted, Guid.NewGuid(), today, OwnerId));
+        await _sut.HandleAsync(new CreateEntryCommand(JournalEventType.BreakCompleted, Guid.NewGuid(), today, OwnerId));
 
         Assert.Equal(1, _repository.Entries[0].Sequence);
         Assert.Equal(2, _repository.Entries[1].Sequence);
@@ -97,7 +100,7 @@ public sealed class CreateEntryCommandHandlerTests
     [Fact]
     public async Task Should_AssignNullSequence_When_EventIsTaskCompleted()
     {
-        var command = new CreateEntryCommand(JournalEventType.TaskCompleted, Guid.NewGuid(), DateTime.UtcNow);
+        var command = new CreateEntryCommand(JournalEventType.TaskCompleted, Guid.NewGuid(), DateTime.UtcNow, OwnerId);
 
         await _sut.HandleAsync(command);
 
@@ -107,7 +110,7 @@ public sealed class CreateEntryCommandHandlerTests
     [Fact]
     public async Task Should_ReturnSuccess_When_CommandIsValid()
     {
-        var command = new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), DateTime.UtcNow);
+        var command = new CreateEntryCommand(JournalEventType.SprintStarted, Guid.NewGuid(), DateTime.UtcNow, OwnerId);
 
         var result = await _sut.HandleAsync(command);
 

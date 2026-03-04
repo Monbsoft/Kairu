@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Tasks.Common;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Domain.Tasks;
@@ -9,24 +10,29 @@ public sealed class UpdateTaskStatusCommandHandler
 {
     private readonly IPomodoroSessionRepository _sessionRepository;
     private readonly ITaskRepository _taskRepository;
+    private readonly ICurrentUserService _currentUserService;
 
     public UpdateTaskStatusCommandHandler(
         IPomodoroSessionRepository sessionRepository,
-        ITaskRepository taskRepository)
+        ITaskRepository taskRepository,
+        ICurrentUserService currentUserService)
     {
         _sessionRepository = sessionRepository;
         _taskRepository = taskRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<UpdateTaskStatusResult> HandleAsync(
         UpdateTaskStatusCommand command,
         CancellationToken cancellationToken = default)
     {
-        var session = await _sessionRepository.GetActiveAsync(cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var session = await _sessionRepository.GetActiveAsync(userId, cancellationToken);
         if (session is null)
             return UpdateTaskStatusResult.Failure("No active session");
 
-        var task = await _taskRepository.GetByIdAsync(TaskId.From(command.TaskId), cancellationToken);
+        var task = await _taskRepository.GetByIdAsync(TaskId.From(command.TaskId), userId, cancellationToken);
         if (task is null)
             return UpdateTaskStatusResult.NotFound();
 

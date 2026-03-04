@@ -1,6 +1,8 @@
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Application.Pomodoro.Commands.InterruptSession;
+using Kairudev.Application.Tests.Common;
 using Kairudev.Application.Tests.Journal;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
 
@@ -15,12 +17,15 @@ public sealed class InterruptSessionCommandHandlerTests
     public InterruptSessionCommandHandlerTests()
     {
         var journalHandler = new CreateEntryCommandHandler(_journalRepository);
-        _sut = new InterruptSessionCommandHandler(_sessionRepository, journalHandler);
+        _sut = new InterruptSessionCommandHandler(
+            _sessionRepository,
+            journalHandler,
+            new FakeCurrentUserService());
     }
 
     private PomodoroSession AddActiveSession(PomodoroSessionType type)
     {
-        var session = PomodoroSession.Create(type, 25);
+        var session = PomodoroSession.Create(type, 25, UserId.From("test-github-id-123"));
         session.Start(DateTime.UtcNow);
         _sessionRepository.Sessions.Add(session);
         return session;

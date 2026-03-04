@@ -1,4 +1,5 @@
 using Kairudev.Domain.Common;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Tasks;
 
 namespace Kairudev.Domain.Pomodoro;
@@ -7,14 +8,16 @@ public sealed class PomodoroSession : AggregateRoot<PomodoroSessionId>
 {
     private readonly List<Guid> _linkedTaskIdValues = [];
 
-    private PomodoroSession(PomodoroSessionId id, PomodoroSessionType sessionType, int plannedDurationMinutes)
+    private PomodoroSession(PomodoroSessionId id, UserId ownerId, PomodoroSessionType sessionType, int plannedDurationMinutes)
         : base(id)
     {
+        OwnerId = ownerId;
         SessionType = sessionType;
         PlannedDurationMinutes = plannedDurationMinutes;
         Status = PomodoroSessionStatus.Planned;
     }
 
+    public UserId OwnerId { get; private set; } = default!;
     public PomodoroSessionType SessionType { get; }
     public PomodoroSessionStatus Status { get; private set; }
     public int PlannedDurationMinutes { get; }
@@ -31,8 +34,8 @@ public sealed class PomodoroSession : AggregateRoot<PomodoroSessionId>
         init => _linkedTaskIdValues = value;
     }
 
-    public static PomodoroSession Create(PomodoroSessionType sessionType, int plannedDurationMinutes) =>
-        new(PomodoroSessionId.New(), sessionType, plannedDurationMinutes);
+    public static PomodoroSession Create(PomodoroSessionType sessionType, int plannedDurationMinutes, UserId ownerId) =>
+        new(PomodoroSessionId.New(), ownerId, sessionType, plannedDurationMinutes);
 
     public Result Start(DateTime now)
     {

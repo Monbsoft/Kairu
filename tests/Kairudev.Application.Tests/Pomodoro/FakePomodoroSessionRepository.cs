@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Pomodoro;
 
 namespace Kairudev.Application.Tests.Pomodoro;
@@ -21,19 +22,19 @@ internal sealed class FakePomodoroSessionRepository : IPomodoroSessionRepository
         return Task.FromResult<IReadOnlyList<PomodoroSession>>(Sessions.Where(s => idSet.Contains(s.Id)).ToList());
     }
 
-    public Task<PomodoroSession?> GetActiveAsync(CancellationToken cancellationToken = default) =>
+    public Task<PomodoroSession?> GetActiveAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Sessions.FirstOrDefault(s => s.Status == PomodoroSessionStatus.Active));
 
     public Task UpdateAsync(PomodoroSession session, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
-    public Task<int> GetCompletedTodayCountAsync(CancellationToken cancellationToken = default) =>
+    public Task<int> GetCompletedTodayCountAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Sessions.Count(s => s.Status == PomodoroSessionStatus.Completed));
 
-    public Task<int> GetCompletedSprintsTodayCountAsync(CancellationToken cancellationToken = default) =>
+    public Task<int> GetCompletedSprintsTodayCountAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Sessions.Count(s => s.SessionType == PomodoroSessionType.Sprint && s.Status == PomodoroSessionStatus.Completed));
 
-    public Task<PomodoroSession?> GetLatestCompletedTodayAsync(CancellationToken cancellationToken = default) =>
+    public Task<PomodoroSession?> GetLatestCompletedTodayAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Sessions
             .Where(s => s.Status == PomodoroSessionStatus.Completed && s.EndedAt.HasValue && s.EndedAt.Value.Date == DateTime.UtcNow.Date)
             .OrderByDescending(s => s.EndedAt)

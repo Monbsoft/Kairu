@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Domain.Settings;
@@ -12,6 +13,7 @@ public sealed class KairudevDbContext : DbContext
 {
     public KairudevDbContext(DbContextOptions<KairudevDbContext> options) : base(options) { }
 
+    public DbSet<User> Users => Set<User>();
     public DbSet<DeveloperTask> Tasks => Set<DeveloperTask>();
     public DbSet<PomodoroSession> PomodoroSessions => Set<PomodoroSession>();
     internal DbSet<PomodoroSettingsRow> PomodoroSettings => Set<PomodoroSettingsRow>();
@@ -21,6 +23,7 @@ public sealed class KairudevDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new TaskConfiguration());
         modelBuilder.ApplyConfiguration(new PomodoroSessionConfiguration());
         modelBuilder.ApplyConfiguration(new PomodoroSettingsConfiguration());

@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Tasks.Common;
 using Kairudev.Domain.Tasks;
 
@@ -6,17 +7,21 @@ namespace Kairudev.Application.Tasks.Commands.UpdateTask;
 public sealed class UpdateTaskCommandHandler
 {
     private readonly ITaskRepository _repository;
+    private readonly ICurrentUserService _currentUserService;
 
-    public UpdateTaskCommandHandler(ITaskRepository repository)
+    public UpdateTaskCommandHandler(ITaskRepository repository, ICurrentUserService currentUserService)
     {
         _repository = repository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<UpdateTaskResult> HandleAsync(
         UpdateTaskCommand command,
         CancellationToken cancellationToken = default)
     {
-        var task = await _repository.GetByIdAsync(TaskId.From(command.TaskId), cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var task = await _repository.GetByIdAsync(TaskId.From(command.TaskId), userId, cancellationToken);
         if (task is null)
             return UpdateTaskResult.NotFound();
 

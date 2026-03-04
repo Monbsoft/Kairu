@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Settings.Common;
 using Kairudev.Domain.Settings;
 
@@ -6,15 +7,18 @@ namespace Kairudev.Application.Settings.Queries.GetUserSettings;
 public sealed class GetUserSettingsQueryHandler
 {
     private readonly IUserSettingsRepository _repository;
+    private readonly ICurrentUserService _currentUserService;
 
-    public GetUserSettingsQueryHandler(IUserSettingsRepository repository)
+    public GetUserSettingsQueryHandler(IUserSettingsRepository repository, ICurrentUserService currentUserService)
     {
         _repository = repository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<GetUserSettingsResult> Handle(GetUserSettingsQuery query)
     {
-        var settings = await _repository.GetAsync();
+        var userId = _currentUserService.CurrentUserId;
+        var settings = await _repository.GetByUserIdAsync(userId);
 
         var jiraConfigured = !string.IsNullOrWhiteSpace(settings.JiraBaseUrl)
             && !string.IsNullOrWhiteSpace(settings.JiraEmail)

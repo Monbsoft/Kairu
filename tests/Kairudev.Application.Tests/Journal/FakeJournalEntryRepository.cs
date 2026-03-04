@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 
 namespace Kairudev.Application.Tests.Journal;
@@ -15,7 +16,7 @@ internal sealed class FakeJournalEntryRepository : IJournalEntryRepository
     public Task<JournalEntry?> GetByIdAsync(JournalEntryId id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Entries.FirstOrDefault(e => e.Id == id));
 
-    public Task<IReadOnlyList<JournalEntry>> GetEntriesByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<JournalEntry>> GetEntriesByDateAsync(DateOnly date, UserId userId, CancellationToken cancellationToken = default)
     {
         var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var end   = date.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
@@ -27,7 +28,7 @@ internal sealed class FakeJournalEntryRepository : IJournalEntryRepository
         return Task.FromResult(result);
     }
 
-    public Task<int> GetTodayCountByTypeAsync(JournalEventType eventType, DateOnly today, CancellationToken cancellationToken = default)
+    public Task<int> GetTodayCountByTypeAsync(JournalEventType eventType, DateOnly today, UserId userId, CancellationToken cancellationToken = default)
     {
         var start = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var end   = today.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);

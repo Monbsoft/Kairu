@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Application.Pomodoro.Common;
 using Kairudev.Domain.Journal;
@@ -10,26 +11,31 @@ public sealed class StartSessionCommandHandler
     private readonly IPomodoroSessionRepository _sessionRepository;
     private readonly IPomodoroSettingsRepository _settingsRepository;
     private readonly CreateEntryCommandHandler _journalHandler;
+    private readonly ICurrentUserService _currentUserService;
 
     public StartSessionCommandHandler(
         IPomodoroSessionRepository sessionRepository,
         IPomodoroSettingsRepository settingsRepository,
-        CreateEntryCommandHandler journalHandler)
+        CreateEntryCommandHandler journalHandler,
+        ICurrentUserService currentUserService)
     {
         _sessionRepository = sessionRepository;
         _settingsRepository = settingsRepository;
         _journalHandler = journalHandler;
+        _currentUserService = currentUserService;
     }
 
     public async Task<StartSessionResult> HandleAsync(
         StartSessionCommand command,
         CancellationToken cancellationToken = default)
     {
-        var existingSession = await _sessionRepository.GetActiveAsync(cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var existingSession = await _sessionRepository.GetActiveAsync(userId, cancellationToken);
         if (existingSession is not null)
             return StartSessionResult.Failure("A session is already active");
 
-        var settings = await _settingsRepository.GetAsync(cancellationToken);
+        var settings = await _settingsRepository.GetByUserIdAsync(userId, cancellationToken);
 
         // Parse session type
         var sessionType = string.IsNullOrWhiteSpace(command.SessionType) ||
@@ -46,7 +52,7 @@ public sealed class StartSessionCommandHandler
             _ => settings.SprintDurationMinutes
         };
 
-        var session = PomodoroSession.Create(sessionType, durationMinutes);
+        var session = PomodoroSession.Create(sessionType, durationMinutes, userId);
         var startResult = session.Start(DateTime.UtcNow);
         if (startResult.IsFailure)
             return StartSessionResult.Failure(startResult.Error);
@@ -62,7 +68,8 @@ public sealed class StartSessionCommandHandler
             new CreateEntryCommand(
                 eventType,
                 session.Id.Value,
-                DateTime.UtcNow),
+                DateTime.UtcNow,
+                userId),
             cancellationToken);
 
         return StartSessionResult.Success(PomodoroSessionViewModel.From(session));

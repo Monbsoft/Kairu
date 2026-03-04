@@ -7,33 +7,42 @@
 
 ## Résumé état actuel
 
-**Dernière itération : #14 — Navigation sidebar icônes seulement** (2026-03-03)
+**Dernière itération : #15 — Auth GitHub + Multi-users** (2026-03-04)
 
 **Bounded Contexts opérationnels :**
-- **Tasks** : 8 Commands/Queries — **Architecture CQRS** ✅ (🆕 LinkJiraTicket, UnlinkJiraTicket)
-- **Pomodoro** : 10 Commands/Queries — **Architecture CQRS** ✅
-- **Journal** : 6 Commands/Queries — **Architecture CQRS** ✅
-- **Settings** : 4 Commands/Queries — **Architecture CQRS** ✅ (🆕 SaveJiraSettings)
-- **Tickets** : 1 Query — **Architecture CQRS** ✅ (🆕 GetAssignedJiraTickets)
+- **Identity** : `User`, `UserId`, `IUserRepository`, `GetOrCreateUserCommandHandler` ✅ (🆕)
+- **Tasks** : 8 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
+- **Pomodoro** : 10 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
+- **Journal** : 6 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
+- **Settings** : 4 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
+- **Tickets** : 1 Query — **Architecture CQRS** ✅
 
 **Architecture Application Layer :**
 - ✅ **CQRS sans MediatR** : Commands (écriture) + Queries (lecture)
 - ✅ **Handlers** retournent directement des `Result` (plus de Presenters)
 - ✅ **Injection directe** dans les Controllers (pas de mediator)
-- ✅ **29 use cases** (8 Tasks + 10 Pomodoro + 6 Journal + 4 Settings + 1 Tickets)
+- ✅ **ICurrentUserService** : abstraction application-layer pour l'identité courante
+- ✅ **30 use cases** (8 Tasks + 10 Pomodoro + 6 Journal + 4 Settings + 1 Tickets + 1 Identity)
 
-**Fonctionnalités Tickets (Jira) :**
-- ✅ Page Tickets : liste les tickets Jira assignés à l'utilisateur (Web + MAUI)
-- ✅ Lier un ticket Jira à une tâche Kairudev (clé `PROJ-123`, format validé)
-- ✅ Délier un ticket Jira d'une tâche
-- ✅ Configuration Jira dans les Paramètres (BaseUrl + Email + ApiToken)
-- ✅ Gestion du cas "Jira non configuré" (message explicite + lien vers Paramètres)
+**Authentification :**
+- ✅ GitHub OAuth 2.0 (`GET /api/auth/github` → callback → JWT HS256)
+- ✅ `AuthController` : `/github`, `/github/callback`, `/me`
+- ✅ JWT Bearer sur tous les controllers (TasksController, PomodoroController, JournalController, SettingsController, TicketsController)
+- ✅ `ClaimsCurrentUserService` : lit le claim `sub` depuis le JWT
+- ✅ `GetOrCreateUserCommandHandler` : crée l'utilisateur au premier login
+
+**Multi-users :**
+- ✅ `OwnerId` (UserId) ajouté à `DeveloperTask`, `PomodoroSession`, `JournalEntry`
+- ✅ `UserSettings` migré de singleton (int PK=1) à per-user (UserId PK)
+- ✅ `PomodoroSettings` migré de singleton (Id=1) à per-user (UserId string PK)
+- ✅ Tous les repositories filtrent les données par `UserId`
+- ✅ Table `Users` créée en base (GitHubId unique, Login, DisplayName, Email?)
 
 **Tests :** 155 au total ✅ (90 Domain + 48 Application + 17 Infrastructure)
 
 **Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite + EF Core, .NET Aspire
 
-**Migrations :** 8 migrations (InitialCreate, AddPomodoro, AddJournalEntry, AddTaskDescription, AddSessionType, AddUserSettings, AddJiraTicketKeyToTasks, AddJiraSettingsToUserSettings)
+**Migrations :** 9 migrations (+ InitialMultiUser : table Users, OwnerId sur toutes les entités, refonte PK UserSettings et PomodoroSettings)
 
 ---
 
@@ -63,32 +72,71 @@
 | ~~#12~~ | ~~Journal : navigation historique + numérotation sprints~~ | ~~✅ Livré~~ | ~~2026-03-02~~ |
 | ~~#13~~ | ~~BC Tickets — intégration Jira (liste, lien tâche, config)~~ | ~~✅ Livré~~ | ~~2026-03-03~~ |
 | ~~#14~~ | ~~Navigation sidebar — icônes seulement, style VS Code (Web + MAUI)~~ | ~~✅ Livré~~ | ~~2026-03-03~~ |
+| ~~#15~~ | ~~Auth GitHub + Multi-users — JWT, OwnerId sur toutes les entités, ICurrentUserService~~ | ~~✅ Livré~~ | ~~2026-03-04~~ |
 
 ---
 
 ## Dernière itération livrée
 
-**#14 — Navigation sidebar icônes seulement** — Livré le 2026-03-03
+**#15 — Auth GitHub + Multi-users** — Livré le 2026-03-04
 
 ### Ce qui a été livré
 
-**UI Web (Blazor WASM)** ✅
-- `NavMenu.razor` : suppression des labels texte, ajout `title="..."` sur chaque `NavLink`, classe `nav-icon`
-- `NavMenu.razor.css` : icônes centrées (3rem×3rem), tooltip CSS pur via `content: attr(title)` + `::after`, `font-size: 1.4rem`
-- `MainLayout.razor.css` : sidebar réduite de 250px → **64px**
-- En-tête sidebar : "Kairudev" → lettre "K" (`.navbar-brand-icon`)
+**BC Identity (Domain)** ✅
+- `UserId` : value record wrappant un GitHub ID string (`UserId.From(string)`)
+- `User` : entity (`Entity<UserId>`) avec `GitHubId`, `Login`, `DisplayName`, `Email?`
+- `IUserRepository` : `GetByGitHubIdAsync` + `AddAsync`
 
-**UI MAUI (Blazor Hybrid)** ✅
-- Mêmes changements que Web : `NavMenu.razor`, `NavMenu.razor.css`, `MainLayout.razor.css`
+**Multi-user : OwnerId sur toutes les entités** ✅
+- `DeveloperTask.OwnerId` + `Create()` accepte `UserId`
+- `PomodoroSession.OwnerId` + `Create()` accepte `UserId`
+- `JournalEntry.OwnerId` + `Create()` accepte `UserId`
+- `UserSettings` : migré de `AggregateRoot<int>` (singleton Id=1) à `AggregateRoot<UserId>` (per-user)
+- `PomodoroSettingsRow` : migré de `int Id=1` à `string UserId` comme PK
+
+**Interfaces repository mises à jour** ✅
+- `ITaskRepository.GetByIdAsync(TaskId, UserId)`, `GetAllAsync(UserId)`, `DeleteAsync(TaskId, UserId)`
+- `IPomodoroSessionRepository` : toutes les méthodes user-specific acceptent `UserId`
+- `IPomodoroSettingsRepository` : `GetByUserIdAsync(UserId)`, `SaveAsync(PomodoroSettings, UserId)`
+- `IJournalEntryRepository` : `GetEntriesByDateAsync(DateOnly, UserId)`, `GetTodayCountByTypeAsync(..., UserId)`
+- `IUserSettingsRepository` : `GetByUserIdAsync(UserId)` remplace `GetAsync()`
+
+**Application Layer** ✅
+- `ICurrentUserService` : interface abstraction identité courante (`CurrentUserId` property)
+- `GetOrCreateUserCommand/Handler/Result` : crée l'utilisateur au premier login GitHub
+- Tous les handlers (Tasks, Pomodoro, Journal, Settings) injectent `ICurrentUserService`
+- `CreateEntryCommand` inclut maintenant `OwnerId`
+
+**Infrastructure** ✅
+- `UserConfiguration` + `SqliteUserRepository` : persistence table `Users`
+- Toutes les configurations EF Core mises à jour pour mapper `OwnerId`
+- Comparaisons EF Core : `t.OwnerId == userId` (conversion value object → string automatique)
+- `Entity<TId>` : constructeur protégé sans paramètre ajouté pour EF Core materialization
+- `UserSettings` : constructeur privé sans paramètre pour EF Core materialization
+- Migration `InitialMultiUser` : table Users + OwnerId sur Tasks/PomodoroSessions/JournalEntries + refonte PK UserSettings et PomodoroSettings
+
+**Auth API** ✅
+- `AuthController` : `GET /api/auth/github`, `GET /api/auth/github/callback`, `GET /api/auth/me`
+- `ClaimsCurrentUserService` : lit le claim `sub` depuis le JWT Bearer
+- GitHub OAuth 2.0 + JWT HS256 (configurable via `appsettings.Development.json`)
+- `[Authorize]` sur TasksController, PomodoroController, JournalController, SettingsController, TicketsController
+- `Microsoft.AspNetCore.Authentication.JwtBearer` 10.0.3 ajouté
+- `Program.cs` : `AddAuthentication`, `AddAuthorization`, `UseAuthentication`, `UseAuthorization`
+
+**Tests** ✅ (155 tests, 0 échec)
+- `FakeCurrentUserService` : stub pour les tests Application
+- Tous les fake repositories mis à jour (signatures UserId)
+- Tous les tests Domain/Application/Infrastructure mis à jour (UserId dans Create())
 
 ### Impact
-- Navigation compacte : gain de 186px de largeur pour le contenu principal
-- Tooltips CSS pur (sans JS) : apparaissent au hover à droite de chaque icône
-- Style VS Code : icônes emoji centrées, hover/active avec fond semi-transparent
-- Cohérence Web ↔ MAUI
+- **Sécurité** : chaque utilisateur ne peut accéder qu'à ses propres données
+- **Multi-users** : N utilisateurs peuvent utiliser la même instance de Kairudev
+- **GitHub SSO** : connexion en un clic via GitHub OAuth
 
 ### Dette technique introduite
-Aucune ✅
+- `appsettings.Development.json` : `GitHub:ClientSecret` et `Jwt:SecretKey` à configurer manuellement (ne pas committer les vraies valeurs)
+- Blazor Web et MAUI : pas encore intégrés avec l'authentification (pas de flux login UI)
+- `JiraApiToken` toujours stocké en clair (dette précédente)
 
 ---
 

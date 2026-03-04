@@ -2,12 +2,14 @@ using Kairudev.Application.Settings.Commands.SaveJiraSettings;
 using Kairudev.Application.Settings.Commands.SaveRingtonePreference;
 using Kairudev.Application.Settings.Commands.SaveThemePreference;
 using Kairudev.Application.Settings.Queries.GetUserSettings;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kairudev.Api.Settings;
 
 [ApiController]
 [Route("api/settings")]
+[Authorize]
 public sealed class SettingsController : ControllerBase
 {
     private readonly GetUserSettingsQueryHandler _getUserSettings;

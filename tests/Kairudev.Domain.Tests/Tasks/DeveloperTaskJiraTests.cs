@@ -1,14 +1,18 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Tasks;
 
 namespace Kairudev.Domain.Tests.Tasks;
 
 public sealed class DeveloperTaskJiraTests
 {
+    private static readonly UserId OwnerId = UserId.From("test-user");
+
     private static DeveloperTask CreateTask() =>
         DeveloperTask.Create(
             TaskTitle.Create("Task title").Value,
             null,
-            DateTime.UtcNow);
+            DateTime.UtcNow,
+            OwnerId);
 
     [Fact]
     public void Should_HaveNoJiraTicket_When_TaskIsCreated()

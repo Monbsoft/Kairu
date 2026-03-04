@@ -6,12 +6,14 @@ using Kairudev.Application.Tasks.Commands.LinkJiraTicket;
 using Kairudev.Application.Tasks.Commands.UnlinkJiraTicket;
 using Kairudev.Application.Tasks.Commands.UpdateTask;
 using Kairudev.Application.Tasks.Queries.ListTasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kairudev.Api.Tasks;
 
 [ApiController]
 [Route("api/tasks")]
+[Authorize]
 public sealed class TasksController : ControllerBase
 {
     private readonly AddTaskCommandHandler _addTask;

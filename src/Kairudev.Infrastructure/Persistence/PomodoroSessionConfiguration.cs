@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Pomodoro;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,6 +18,11 @@ internal sealed class PomodoroSessionConfiguration : IEntityTypeConfiguration<Po
                 id => id.Value,
                 value => PomodoroSessionId.From(value))
             .ValueGeneratedNever();
+
+        builder.Property(s => s.OwnerId)
+            .HasConversion(v => v.Value, v => UserId.From(v))
+            .HasMaxLength(50)
+            .IsRequired(false); // nullable for migration compatibility
 
         builder.Property(s => s.SessionType)
             .HasConversion<string>()

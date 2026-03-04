@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Domain.Settings;
 
 namespace Kairudev.Application.Settings.Commands.SaveRingtonePreference;
@@ -5,10 +6,12 @@ namespace Kairudev.Application.Settings.Commands.SaveRingtonePreference;
 public sealed class SaveRingtonePreferenceCommandHandler
 {
     private readonly IUserSettingsRepository _repository;
+    private readonly ICurrentUserService _currentUserService;
 
-    public SaveRingtonePreferenceCommandHandler(IUserSettingsRepository repository)
+    public SaveRingtonePreferenceCommandHandler(IUserSettingsRepository repository, ICurrentUserService currentUserService)
     {
         _repository = repository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<SaveRingtonePreferenceResult> Handle(SaveRingtonePreferenceCommand command)
@@ -18,7 +21,8 @@ public sealed class SaveRingtonePreferenceCommandHandler
             return SaveRingtonePreferenceResult.Failure($"Invalid ringtone preference '{command.RingtonePreference}'. Valid values: None, AlarmClock, Bird.");
         }
 
-        var settings = await _repository.GetAsync();
+        var userId = _currentUserService.CurrentUserId;
+        var settings = await _repository.GetByUserIdAsync(userId);
         settings.UpdateRingtonePreference(ringtonePreference);
         await _repository.UpdateAsync(settings);
 

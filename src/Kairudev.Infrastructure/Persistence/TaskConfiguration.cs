@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,6 +18,11 @@ internal sealed class TaskConfiguration : IEntityTypeConfiguration<DeveloperTask
                 id => id.Value,
                 value => TaskId.From(value))
             .ValueGeneratedNever();
+
+        builder.Property(t => t.OwnerId)
+            .HasConversion(v => v.Value, v => UserId.From(v))
+            .HasMaxLength(50)
+            .IsRequired(false); // nullable for migration compatibility
 
         builder.Property(t => t.Title)
             .HasConversion(

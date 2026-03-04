@@ -5,7 +5,10 @@ public abstract class Entity<TId>
 {
     protected Entity(TId id) => Id = id;
 
-    public TId Id { get; }
+    // Parameterless constructor required by EF Core for materialization
+    protected Entity() => Id = default!;
+
+    public TId Id { get; private set; } = default!;
 
     public override bool Equals(object? obj)
     {

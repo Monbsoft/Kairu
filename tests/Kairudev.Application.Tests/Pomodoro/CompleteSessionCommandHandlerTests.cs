@@ -1,6 +1,8 @@
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Application.Pomodoro.Commands.CompleteSession;
+using Kairudev.Application.Tests.Common;
 using Kairudev.Application.Tests.Journal;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
 
@@ -16,12 +18,16 @@ public sealed class CompleteSessionCommandHandlerTests
     public CompleteSessionCommandHandlerTests()
     {
         var journalHandler = new CreateEntryCommandHandler(_journalRepository);
-        _sut = new CompleteSessionCommandHandler(_sessionRepository, _settingsRepository, journalHandler);
+        _sut = new CompleteSessionCommandHandler(
+            _sessionRepository,
+            _settingsRepository,
+            journalHandler,
+            new FakeCurrentUserService());
     }
 
     private PomodoroSession AddActiveSession(PomodoroSessionType type)
     {
-        var session = PomodoroSession.Create(type, 25);
+        var session = PomodoroSession.Create(type, 25, UserId.From("test-github-id-123"));
         session.Start(DateTime.UtcNow);
         _sessionRepository.Sessions.Add(session);
         return session;
@@ -75,7 +81,12 @@ public sealed class CompleteSessionCommandHandlerTests
     {
         // première pause déjà enregistrée
         _journalRepository.Entries.Add(
-            JournalEntry.Create(JournalEventType.BreakCompleted, Guid.NewGuid(), DateTime.UtcNow.AddHours(-1), 1));
+            JournalEntry.Create(
+                JournalEventType.BreakCompleted,
+                Guid.NewGuid(),
+                DateTime.UtcNow.AddHours(-1),
+                UserId.From("test-github-id-123"),
+                1));
 
         AddActiveSession(PomodoroSessionType.ShortBreak);
 

@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Settings;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,15 +13,16 @@ internal sealed class SqliteUserSettingsRepository : IUserSettingsRepository
         _context = context;
     }
 
-    public async Task<UserSettings> GetAsync()
+    public async Task<UserSettings> GetByUserIdAsync(UserId userId)
     {
+        // PK is the UserId string value — use FindAsync with the raw string
         var settings = await _context.Set<UserSettings>()
-            .FirstOrDefaultAsync(s => s.Id == UserSettings.SingletonId);
+            .FindAsync(userId);
 
-        if (settings == null)
+        if (settings is null)
         {
-            // Create default settings if none exist
-            settings = UserSettings.CreateDefault();
+            // Create default settings if none exist for this user
+            settings = UserSettings.CreateDefault(userId);
             _context.Set<UserSettings>().Add(settings);
             await _context.SaveChangesAsync();
         }

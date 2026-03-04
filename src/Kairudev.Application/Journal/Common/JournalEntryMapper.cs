@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Domain.Tasks;
@@ -20,9 +21,10 @@ internal static class JournalEntryMapper
         IReadOnlyList<JournalEntry> entries,
         IPomodoroSessionRepository sessionRepository,
         ITaskRepository taskRepository,
+        UserId userId,
         CancellationToken cancellationToken)
     {
-        var allTasks = await taskRepository.GetAllAsync(cancellationToken);
+        var allTasks = await taskRepository.GetAllAsync(userId, cancellationToken);
         var taskLookup = allTasks.ToDictionary(t => t.Id.Value, t => t.Title.Value);
 
         var sessionIds = entries

@@ -1,10 +1,12 @@
 using Kairudev.Application.Tickets.Queries.GetAssignedJiraTickets;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kairudev.Api.Tickets;
 
 [ApiController]
 [Route("api/tickets")]
+[Authorize]
 public sealed class TicketsController : ControllerBase
 {
     private readonly GetAssignedJiraTicketsQueryHandler _getAssignedTickets;

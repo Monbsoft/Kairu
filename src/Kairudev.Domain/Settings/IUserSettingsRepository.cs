@@ -1,3 +1,5 @@
+using Kairudev.Domain.Identity;
+
 namespace Kairudev.Domain.Settings;
 
 /// <summary>
@@ -6,10 +8,10 @@ namespace Kairudev.Domain.Settings;
 public interface IUserSettingsRepository
 {
     /// <summary>
-    /// Gets the user settings (singleton).
+    /// Gets the user settings for the given user.
     /// Creates default settings if none exist.
     /// </summary>
-    Task<UserSettings> GetAsync();
+    Task<UserSettings> GetByUserIdAsync(UserId userId);
 
     /// <summary>
     /// Updates the user settings.

@@ -24,23 +24,23 @@ public sealed class CreateEntryCommandHandler
 
             if (command.EventType == JournalEventType.BreakCompleted)
             {
-                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.BreakCompleted, today, cancellationToken);
+                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.BreakCompleted, today, command.OwnerId, cancellationToken);
                 sequence = count + 1;
             }
             else if (command.EventType == JournalEventType.SprintStarted)
             {
-                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.SprintStarted, today, cancellationToken);
+                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.SprintStarted, today, command.OwnerId, cancellationToken);
                 sequence = count + 1;
             }
             else if (command.EventType is JournalEventType.SprintCompleted or JournalEventType.SprintInterrupted)
             {
                 // Le sprint était déjà démarré : count(SprintStarted today) = numéro du sprint courant
-                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.SprintStarted, today, cancellationToken);
+                var count = await _repository.GetTodayCountByTypeAsync(JournalEventType.SprintStarted, today, command.OwnerId, cancellationToken);
                 if (count > 0)
                     sequence = count;
             }
 
-            var entry = JournalEntry.Create(command.EventType, command.ResourceId, command.OccurredAt, sequence);
+            var entry = JournalEntry.Create(command.EventType, command.ResourceId, command.OccurredAt, command.OwnerId, sequence);
             await _repository.AddAsync(entry, cancellationToken);
             return CreateEntryResult.Success();
         }

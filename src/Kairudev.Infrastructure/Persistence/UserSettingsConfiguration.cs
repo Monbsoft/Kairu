@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -13,6 +14,8 @@ internal sealed class UserSettingsConfiguration : IEntityTypeConfiguration<UserS
         builder.HasKey(s => s.Id);
 
         builder.Property(s => s.Id)
+            .HasConversion(v => v.Value, v => UserId.From(v))
+            .HasMaxLength(50)
             .ValueGeneratedNever();
 
         builder.Property(s => s.ThemePreference)

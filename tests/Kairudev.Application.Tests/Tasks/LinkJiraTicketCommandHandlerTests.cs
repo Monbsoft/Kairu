@@ -1,4 +1,6 @@
 using Kairudev.Application.Tasks.Commands.LinkJiraTicket;
+using Kairudev.Application.Tests.Common;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Tasks;
 
 namespace Kairudev.Application.Tests.Tasks;
@@ -10,13 +12,13 @@ public sealed class LinkJiraTicketCommandHandlerTests
 
     public LinkJiraTicketCommandHandlerTests()
     {
-        _handler = new LinkJiraTicketCommandHandler(_repository);
+        _handler = new LinkJiraTicketCommandHandler(_repository, new FakeCurrentUserService());
     }
 
     private static DeveloperTask CreateTask()
     {
         var title = TaskTitle.Create("Test task").Value;
-        return DeveloperTask.Create(title, null, DateTime.UtcNow);
+        return DeveloperTask.Create(title, null, DateTime.UtcNow, UserId.From("test-github-id-123"));
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Tasks;
 
 namespace Kairudev.Application.Tests.Tasks;
@@ -12,16 +13,16 @@ internal sealed class FakeTaskRepository : ITaskRepository
         return Task.CompletedTask;
     }
 
-    public Task<DeveloperTask?> GetByIdAsync(TaskId id, CancellationToken cancellationToken = default) =>
+    public Task<DeveloperTask?> GetByIdAsync(TaskId id, UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Tasks.FirstOrDefault(t => t.Id == id));
 
-    public Task<IReadOnlyList<DeveloperTask>> GetAllAsync(CancellationToken cancellationToken = default) =>
+    public Task<IReadOnlyList<DeveloperTask>> GetAllAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<DeveloperTask>>(Tasks.AsReadOnly());
 
     public Task UpdateAsync(DeveloperTask task, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
-    public Task DeleteAsync(TaskId id, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(TaskId id, UserId userId, CancellationToken cancellationToken = default)
     {
         var task = Tasks.FirstOrDefault(t => t.Id == id);
         if (task is not null) Tasks.Remove(task);

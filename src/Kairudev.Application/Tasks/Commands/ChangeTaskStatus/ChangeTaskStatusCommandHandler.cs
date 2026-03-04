@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Application.Tasks.Common;
 using Kairudev.Domain.Journal;
@@ -10,20 +11,25 @@ public sealed class ChangeTaskStatusCommandHandler
 {
     private readonly ITaskRepository _repository;
     private readonly CreateEntryCommandHandler _journalHandler;
+    private readonly ICurrentUserService _currentUserService;
 
     public ChangeTaskStatusCommandHandler(
         ITaskRepository repository,
-        CreateEntryCommandHandler journalHandler)
+        CreateEntryCommandHandler journalHandler,
+        ICurrentUserService currentUserService)
     {
         _repository = repository;
         _journalHandler = journalHandler;
+        _currentUserService = currentUserService;
     }
 
     public async Task<ChangeTaskStatusResult> HandleAsync(
         ChangeTaskStatusCommand command,
         CancellationToken cancellationToken = default)
     {
-        var task = await _repository.GetByIdAsync(TaskId.From(command.TaskId), cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var task = await _repository.GetByIdAsync(TaskId.From(command.TaskId), userId, cancellationToken);
         if (task is null)
             return ChangeTaskStatusResult.NotFound();
 
@@ -44,7 +50,8 @@ public sealed class ChangeTaskStatusCommandHandler
                 new CreateEntryCommand(
                     JournalEventType.TaskStarted,
                     task.Id.Value,
-                    DateTime.UtcNow),
+                    DateTime.UtcNow,
+                    userId),
                 cancellationToken);
         }
         else if (newStatus == TaskStatus.Done)
@@ -53,7 +60,8 @@ public sealed class ChangeTaskStatusCommandHandler
                 new CreateEntryCommand(
                     JournalEventType.TaskCompleted,
                     task.Id.Value,
-                    DateTime.UtcNow),
+                    DateTime.UtcNow,
+                    userId),
                 cancellationToken);
         }
 

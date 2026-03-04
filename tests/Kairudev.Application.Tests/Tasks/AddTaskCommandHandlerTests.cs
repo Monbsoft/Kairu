@@ -1,5 +1,6 @@
 using Kairudev.Application.Tasks.Commands.AddTask;
 using Kairudev.Application.Tasks.Common;
+using Kairudev.Application.Tests.Common;
 using Kairudev.Domain.Tasks;
 
 namespace Kairudev.Application.Tests.Tasks;
@@ -10,7 +11,7 @@ public sealed class AddTaskCommandHandlerTests
     private readonly AddTaskCommandHandler _sut;
 
     public AddTaskCommandHandlerTests() =>
-        _sut = new AddTaskCommandHandler(_repository);
+        _sut = new AddTaskCommandHandler(_repository, new FakeCurrentUserService());
 
     [Fact]
     public async Task Should_ReturnSuccess_When_TitleIsValid()

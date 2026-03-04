@@ -1,26 +1,34 @@
 using Kairudev.Application.Journal.Queries.GetJournalByDate;
+using Kairudev.Application.Tests.Common;
 using Kairudev.Application.Tests.Pomodoro;
 using Kairudev.Application.Tests.Tasks;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Journal;
 
 namespace Kairudev.Application.Tests.Journal;
 
 public sealed class GetJournalByDateQueryHandlerTests
 {
+    private static readonly UserId OwnerId = UserId.From("test-github-id-123");
+
     private readonly FakeJournalEntryRepository _journalRepo = new();
     private readonly FakePomodoroSessionRepository _sessionRepo = new();
     private readonly FakeTaskRepository _taskRepo = new();
     private readonly GetJournalByDateQueryHandler _sut;
 
     public GetJournalByDateQueryHandlerTests() =>
-        _sut = new GetJournalByDateQueryHandler(_journalRepo, _sessionRepo, _taskRepo);
+        _sut = new GetJournalByDateQueryHandler(
+            _journalRepo,
+            _sessionRepo,
+            _taskRepo,
+            new FakeCurrentUserService());
 
     [Fact]
     public async Task Should_ReturnEntries_When_DateHasEntries()
     {
         var date = new DateOnly(2026, 1, 15);
         var occurredAt = date.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc);
-        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintStarted, Guid.NewGuid(), occurredAt));
+        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintStarted, Guid.NewGuid(), occurredAt, OwnerId));
 
         var result = await _sut.HandleAsync(new GetJournalByDateQuery(date));
 
@@ -45,11 +53,13 @@ public sealed class GetJournalByDateQueryHandlerTests
 
         _journalRepo.Entries.Add(JournalEntry.Create(
             JournalEventType.SprintStarted, Guid.NewGuid(),
-            targetDate.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc)));
+            targetDate.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc),
+            OwnerId));
 
         _journalRepo.Entries.Add(JournalEntry.Create(
             JournalEventType.SprintStarted, Guid.NewGuid(),
-            otherDate.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc)));
+            otherDate.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc),
+            OwnerId));
 
         var result = await _sut.HandleAsync(new GetJournalByDateQuery(targetDate));
 
@@ -60,11 +70,11 @@ public sealed class GetJournalByDateQueryHandlerTests
     public async Task Should_ReturnMultipleEntries_When_DateHasMultipleEvents()
     {
         var date = new DateOnly(2026, 1, 15);
-        var base_time = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var baseTime = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
-        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintStarted,     Guid.NewGuid(), base_time.AddHours(9)));
-        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintCompleted,   Guid.NewGuid(), base_time.AddHours(9).AddMinutes(25)));
-        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.BreakCompleted,    Guid.NewGuid(), base_time.AddHours(9).AddMinutes(30)));
+        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintStarted,   Guid.NewGuid(), baseTime.AddHours(9), OwnerId));
+        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintCompleted, Guid.NewGuid(), baseTime.AddHours(9).AddMinutes(25), OwnerId));
+        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.BreakCompleted,  Guid.NewGuid(), baseTime.AddHours(9).AddMinutes(30), OwnerId));
 
         var result = await _sut.HandleAsync(new GetJournalByDateQuery(date));
 
@@ -76,7 +86,7 @@ public sealed class GetJournalByDateQueryHandlerTests
     {
         var date = new DateOnly(2026, 1, 15);
         var occurredAt = date.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc);
-        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintStarted, Guid.NewGuid(), occurredAt, sequence: 3));
+        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintStarted, Guid.NewGuid(), occurredAt, OwnerId, sequence: 3));
 
         var result = await _sut.HandleAsync(new GetJournalByDateQuery(date));
 
@@ -88,7 +98,7 @@ public sealed class GetJournalByDateQueryHandlerTests
     {
         var date = new DateOnly(2026, 1, 15);
         var occurredAt = date.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc);
-        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintCompleted, Guid.NewGuid(), occurredAt));
+        _journalRepo.Entries.Add(JournalEntry.Create(JournalEventType.SprintCompleted, Guid.NewGuid(), occurredAt, OwnerId));
 
         var result = await _sut.HandleAsync(new GetJournalByDateQuery(date));
 

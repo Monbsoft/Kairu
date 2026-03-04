@@ -8,12 +8,14 @@ using Kairudev.Application.Pomodoro.Commands.UpdateTaskStatus;
 using Kairudev.Application.Pomodoro.Queries.GetCurrentSession;
 using Kairudev.Application.Pomodoro.Queries.GetSettings;
 using Kairudev.Application.Pomodoro.Queries.GetSuggestedSessionType;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kairudev.Api.Pomodoro;
 
 [ApiController]
 [Route("api/pomodoro")]
+[Authorize]
 public sealed class PomodoroController : ControllerBase
 {
     private readonly GetSettingsQueryHandler _getSettings;

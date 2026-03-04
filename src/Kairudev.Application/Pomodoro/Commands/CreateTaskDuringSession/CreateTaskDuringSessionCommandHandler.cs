@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Tasks.Common;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Domain.Tasks;
@@ -8,20 +9,25 @@ public sealed class CreateTaskDuringSessionCommandHandler
 {
     private readonly IPomodoroSessionRepository _sessionRepository;
     private readonly ITaskRepository _taskRepository;
+    private readonly ICurrentUserService _currentUserService;
 
     public CreateTaskDuringSessionCommandHandler(
         IPomodoroSessionRepository sessionRepository,
-        ITaskRepository taskRepository)
+        ITaskRepository taskRepository,
+        ICurrentUserService currentUserService)
     {
         _sessionRepository = sessionRepository;
         _taskRepository = taskRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<CreateTaskDuringSessionResult> HandleAsync(
         CreateTaskDuringSessionCommand command,
         CancellationToken cancellationToken = default)
     {
-        var session = await _sessionRepository.GetActiveAsync(cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var session = await _sessionRepository.GetActiveAsync(userId, cancellationToken);
         if (session is null)
             return CreateTaskDuringSessionResult.Failure("No active session");
 
@@ -33,7 +39,7 @@ public sealed class CreateTaskDuringSessionCommandHandler
         if (descriptionResult.IsFailure)
             return CreateTaskDuringSessionResult.Failure(descriptionResult.Error);
 
-        var task = DeveloperTask.Create(titleResult.Value, descriptionResult.Value, DateTime.UtcNow);
+        var task = DeveloperTask.Create(titleResult.Value, descriptionResult.Value, DateTime.UtcNow, userId);
         await _taskRepository.AddAsync(task, cancellationToken);
 
         var linkResult = session.LinkTask(task.Id);

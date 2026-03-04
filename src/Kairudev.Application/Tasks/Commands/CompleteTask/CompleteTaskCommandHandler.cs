@@ -1,3 +1,4 @@
+using Kairudev.Application.Common;
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Domain.Journal;
 using Kairudev.Domain.Tasks;
@@ -12,20 +13,25 @@ public sealed class CompleteTaskCommandHandler
 {
     private readonly ITaskRepository _repository;
     private readonly CreateEntryCommandHandler _journalHandler;
+    private readonly ICurrentUserService _currentUserService;
 
     public CompleteTaskCommandHandler(
         ITaskRepository repository,
-        CreateEntryCommandHandler journalHandler)
+        CreateEntryCommandHandler journalHandler,
+        ICurrentUserService currentUserService)
     {
         _repository = repository;
         _journalHandler = journalHandler;
+        _currentUserService = currentUserService;
     }
 
     public async Task<CompleteTaskResult> HandleAsync(
         CompleteTaskCommand command,
         CancellationToken cancellationToken = default)
     {
-        var task = await _repository.GetByIdAsync(TaskId.From(command.TaskId), cancellationToken);
+        var userId = _currentUserService.CurrentUserId;
+
+        var task = await _repository.GetByIdAsync(TaskId.From(command.TaskId), userId, cancellationToken);
         if (task is null)
             return CompleteTaskResult.NotFound();
 
@@ -40,7 +46,8 @@ public sealed class CompleteTaskCommandHandler
             new CreateEntryCommand(
                 JournalEventType.TaskCompleted,
                 task.Id.Value,
-                DateTime.UtcNow),
+                DateTime.UtcNow,
+                userId),
             cancellationToken);
 
         return CompleteTaskResult.Success();

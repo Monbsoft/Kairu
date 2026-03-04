@@ -1,4 +1,6 @@
 using Kairudev.Application.Pomodoro.Queries.GetSuggestedSessionType;
+using Kairudev.Application.Tests.Common;
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Pomodoro;
 
 namespace Kairudev.Application.Tests.Pomodoro;
@@ -11,14 +13,17 @@ public sealed class GetSuggestedSessionTypeQueryHandlerTests
 
     public GetSuggestedSessionTypeQueryHandlerTests()
     {
-        _sut = new GetSuggestedSessionTypeQueryHandler(_sessionRepository, _settingsRepository);
+        _sut = new GetSuggestedSessionTypeQueryHandler(
+            _sessionRepository,
+            _settingsRepository,
+            new FakeCurrentUserService());
     }
 
     private void AddCompleted(PomodoroSessionType type, int count = 1)
     {
         for (var i = 0; i < count; i++)
         {
-            var s = PomodoroSession.Create(type, 25);
+            var s = PomodoroSession.Create(type, 25, UserId.From("test-github-id-123"));
             s.Start(DateTime.UtcNow);
             s.Complete(DateTime.UtcNow);
             _sessionRepository.Sessions.Add(s);

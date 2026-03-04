@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Domain.Tasks;
 using PomodoroErrors = Kairudev.Domain.Pomodoro.DomainErrors;
@@ -7,13 +8,14 @@ namespace Kairudev.Domain.Tests.Pomodoro;
 public sealed class PomodoroSessionTests
 {
     private static readonly DateTime Now = new(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+    private static readonly UserId OwnerId = UserId.From("test-user");
 
     private static PomodoroSession CreatePlanned(int minutes = 25) =>
-        PomodoroSession.Create(PomodoroSessionType.Sprint, minutes);
+        PomodoroSession.Create(PomodoroSessionType.Sprint, minutes, OwnerId);
 
     private static PomodoroSession CreateActive(int minutes = 25)
     {
-        var s = PomodoroSession.Create(PomodoroSessionType.Sprint, minutes);
+        var s = PomodoroSession.Create(PomodoroSessionType.Sprint, minutes, OwnerId);
         s.Start(Now);
         return s;
     }

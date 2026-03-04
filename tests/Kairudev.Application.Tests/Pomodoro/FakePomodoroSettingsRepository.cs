@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Pomodoro;
 
 namespace Kairudev.Application.Tests.Pomodoro;
@@ -6,10 +7,10 @@ internal sealed class FakePomodoroSettingsRepository : IPomodoroSettingsReposito
 {
     public PomodoroSettings Settings { get; set; } = PomodoroSettings.Default;
 
-    public Task<PomodoroSettings> GetAsync(CancellationToken cancellationToken = default) =>
+    public Task<PomodoroSettings> GetByUserIdAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Settings);
 
-    public Task SaveAsync(PomodoroSettings settings, CancellationToken cancellationToken = default)
+    public Task SaveAsync(PomodoroSettings settings, UserId userId, CancellationToken cancellationToken = default)
     {
         Settings = settings;
         return Task.CompletedTask;

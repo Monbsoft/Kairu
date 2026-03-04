@@ -4,12 +4,14 @@ using Kairudev.Application.Journal.Commands.RemoveComment;
 using Kairudev.Application.Journal.Commands.UpdateComment;
 using Kairudev.Application.Journal.Queries.GetJournalByDate;
 using Kairudev.Application.Journal.Queries.GetTodayJournal;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kairudev.Api.Journal;
 
 [ApiController]
 [Route("api/journal")]
+[Authorize]
 public sealed class JournalController : ControllerBase
 {
     private readonly GetTodayJournalQueryHandler _getTodayJournal;

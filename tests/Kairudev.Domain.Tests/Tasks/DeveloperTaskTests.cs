@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Tasks;
 using DomainTaskStatus = Kairudev.Domain.Tasks.TaskStatus;
 
@@ -5,8 +6,10 @@ namespace Kairudev.Domain.Tests.Tasks;
 
 public sealed class DeveloperTaskTests
 {
+    private static readonly UserId OwnerId = UserId.From("test-user");
+
     private static DeveloperTask CreateValidTask(string title = "Write unit tests") =>
-        DeveloperTask.Create(TaskTitle.Create(title).Value, null, DateTime.UtcNow);
+        DeveloperTask.Create(TaskTitle.Create(title).Value, null, DateTime.UtcNow, OwnerId);
 
     [Fact]
     public void Should_BeInPendingStatus_When_Created()

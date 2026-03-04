@@ -1,3 +1,8 @@
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using Kairudev.Application.Common;
+using Kairudev.Application.Identity.Commands.GetOrCreateUser;
 using Kairudev.Application.Journal.Commands.AddComment;
 using Kairudev.Application.Journal.Commands.CreateEntry;
 using Kairudev.Application.Journal.Commands.RemoveComment;
@@ -27,9 +32,13 @@ using Kairudev.Application.Tasks.Commands.UnlinkJiraTicket;
 using Kairudev.Application.Tasks.Commands.UpdateTask;
 using Kairudev.Application.Tasks.Queries.ListTasks;
 using Kairudev.Application.Tickets.Queries.GetAssignedJiraTickets;
+using Kairudev.Api.Auth;
 using Kairudev.Infrastructure;
 using Kairudev.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +90,66 @@ builder.Services.AddScoped<GetAssignedJiraTicketsQueryHandler>();
 builder.Services.AddScoped<LinkJiraTicketCommandHandler>();
 builder.Services.AddScoped<UnlinkJiraTicketCommandHandler>();
 
+// Identity
+builder.Services.AddScoped<GetOrCreateUserCommandHandler>();
+
+// HTTP Context
+builder.Services.AddHttpContextAccessor();
+
+// Current user service
+builder.Services.AddScoped<ICurrentUserService, ClaimsCurrentUserService>();
+
+// Authentication — JWT Bearer + GitHub OAuth
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
+    ?? "kairudev-dev-secret-key-minimum-32-chars-please!!";
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = "GitHub";
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ClockSkew = TimeSpan.Zero
+        };
+    })
+    .AddOAuth("GitHub", options =>
+    {
+        options.ClientId = builder.Configuration["GitHub:ClientId"] ?? "";
+        options.ClientSecret = builder.Configuration["GitHub:ClientSecret"] ?? "";
+        options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
+        options.TokenEndpoint = "https://github.com/login/oauth/access_token";
+        options.UserInformationEndpoint = "https://api.github.com/user";
+        options.CallbackPath = "/signin-github";
+        options.Scope.Add("user:email");
+        options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+        options.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");
+        options.ClaimActions.MapJsonKey("urn:github:login", "login");
+        options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+        options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
+        {
+            OnCreatingTicket = async context =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+                request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+                using var response = await context.Backchannel.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                var userJson = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                context.RunClaimActions(userJson.RootElement);
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -105,6 +174,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.MapDefaultEndpoints();
 

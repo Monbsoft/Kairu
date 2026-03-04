@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Tasks;
 using DomainTaskStatus = Kairudev.Domain.Tasks.TaskStatus;
 
@@ -6,9 +7,10 @@ namespace Kairudev.Domain.Tests.Tasks;
 public sealed class DeveloperTaskChangeStatusTests
 {
     private static readonly DateTime Now = new(2026, 2, 26, 10, 0, 0, DateTimeKind.Utc);
+    private static readonly UserId OwnerId = UserId.From("test-user");
 
     private static DeveloperTask CreatePendingTask() =>
-        DeveloperTask.Create(TaskTitle.Create("Test task").Value, null, Now);
+        DeveloperTask.Create(TaskTitle.Create("Test task").Value, null, Now, OwnerId);
 
     private static DeveloperTask CreateInProgressTask()
     {

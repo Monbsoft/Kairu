@@ -1,3 +1,4 @@
+using Kairudev.Domain.Identity;
 using Kairudev.Domain.Pomodoro;
 using Kairudev.Infrastructure.Persistence.Internal;
 using Microsoft.EntityFrameworkCore;
@@ -13,9 +14,11 @@ internal sealed class SqlitePomodoroSettingsRepository : IPomodoroSettingsReposi
         _context = context;
     }
 
-    public async Task<PomodoroSettings> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<PomodoroSettings> GetByUserIdAsync(UserId userId, CancellationToken cancellationToken = default)
     {
-        var row = await _context.PomodoroSettings.FindAsync([1], cancellationToken);
+        var row = await _context.PomodoroSettings
+            .FirstOrDefaultAsync(s => s.UserId == userId.Value, cancellationToken);
+
         if (row is null)
             return PomodoroSettings.Default;
 
@@ -25,14 +28,16 @@ internal sealed class SqlitePomodoroSettingsRepository : IPomodoroSettingsReposi
             row.LongBreakDurationMinutes).Value;
     }
 
-    public async Task SaveAsync(PomodoroSettings settings, CancellationToken cancellationToken = default)
+    public async Task SaveAsync(PomodoroSettings settings, UserId userId, CancellationToken cancellationToken = default)
     {
-        var row = await _context.PomodoroSettings.FindAsync([1], cancellationToken);
+        var row = await _context.PomodoroSettings
+            .FirstOrDefaultAsync(s => s.UserId == userId.Value, cancellationToken);
+
         if (row is null)
         {
             row = new PomodoroSettingsRow
             {
-                Id = 1,
+                UserId = userId.Value,
                 SprintDurationMinutes = settings.SprintDurationMinutes,
                 ShortBreakDurationMinutes = settings.ShortBreakDurationMinutes,
                 LongBreakDurationMinutes = settings.LongBreakDurationMinutes
