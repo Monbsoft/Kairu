@@ -104,6 +104,14 @@ builder.Services.AddScoped<ICurrentUserService, ClaimsCurrentUserService>();
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey must be configured in appsettings or user secrets.");
 
+var gitHubClientId = builder.Configuration["GitHub:ClientId"];
+if (string.IsNullOrEmpty(gitHubClientId))
+    throw new InvalidOperationException("GitHub:ClientId must be configured in appsettings or user secrets.");
+
+var gitHubClientSecret = builder.Configuration["GitHub:ClientSecret"];
+if (string.IsNullOrEmpty(gitHubClientSecret))
+    throw new InvalidOperationException("GitHub:ClientSecret must be configured in appsettings or user secrets.");
+
 builder.Services
     .AddAuthentication(options =>
     {
@@ -125,8 +133,8 @@ builder.Services
     })
     .AddOAuth("GitHub", options =>
     {
-        options.ClientId = builder.Configuration["GitHub:ClientId"] ?? "";
-        options.ClientSecret = builder.Configuration["GitHub:ClientSecret"] ?? "";
+        options.ClientId = gitHubClientId;
+        options.ClientSecret = gitHubClientSecret;
         options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
         options.TokenEndpoint = "https://github.com/login/oauth/access_token";
         options.UserInformationEndpoint = "https://api.github.com/user";
