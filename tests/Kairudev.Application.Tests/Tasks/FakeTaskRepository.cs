@@ -14,17 +14,17 @@ internal sealed class FakeTaskRepository : ITaskRepository
     }
 
     public Task<DeveloperTask?> GetByIdAsync(TaskId id, UserId userId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Tasks.FirstOrDefault(t => t.Id == id));
+        Task.FromResult(Tasks.FirstOrDefault(t => t.Id == id && t.OwnerId == userId));
 
     public Task<IReadOnlyList<DeveloperTask>> GetAllAsync(UserId userId, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<DeveloperTask>>(Tasks.AsReadOnly());
+        Task.FromResult<IReadOnlyList<DeveloperTask>>(Tasks.Where(t => t.OwnerId == userId).ToList().AsReadOnly());
 
     public Task UpdateAsync(DeveloperTask task, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
     public Task DeleteAsync(TaskId id, UserId userId, CancellationToken cancellationToken = default)
     {
-        var task = Tasks.FirstOrDefault(t => t.Id == id);
+        var task = Tasks.FirstOrDefault(t => t.Id == id && t.OwnerId == userId);
         if (task is not null) Tasks.Remove(task);
         return Task.CompletedTask;
     }

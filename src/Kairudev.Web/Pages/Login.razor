@@ -48,7 +48,7 @@
             var token = Uri.UnescapeDataString(fragment[7..]);
             await AuthService.SetTokenAsync(token);
             AuthStateProvider.NotifyAuthenticationStateChanged();
-            Nav.NavigateTo("/dashboard", forceLoad: false);
+            Nav.NavigateTo("/dashboard", replace: true);
             return;
         }
 
@@ -66,6 +66,6 @@
 
         // Si deja authentifie, rediriger
         if (await AuthService.IsAuthenticatedAsync())
-            Nav.NavigateTo("/dashboard", forceLoad: false);
+            Nav.NavigateTo("/dashboard", replace: true);
     }
 }

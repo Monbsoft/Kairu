@@ -21,7 +21,7 @@ internal sealed class FakeJournalEntryRepository : IJournalEntryRepository
         var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var end   = date.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
         IReadOnlyList<JournalEntry> result = Entries
-            .Where(e => e.OccurredAt >= start && e.OccurredAt <= end)
+            .Where(e => e.OwnerId == userId && e.OccurredAt >= start && e.OccurredAt <= end)
             .OrderBy(e => e.OccurredAt)
             .ToList()
             .AsReadOnly();
@@ -32,7 +32,7 @@ internal sealed class FakeJournalEntryRepository : IJournalEntryRepository
     {
         var start = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var end   = today.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
-        return Task.FromResult(Entries.Count(e => e.EventType == eventType && e.OccurredAt >= start && e.OccurredAt <= end));
+        return Task.FromResult(Entries.Count(e => e.OwnerId == userId && e.EventType == eventType && e.OccurredAt >= start && e.OccurredAt <= end));
     }
 
     public Task UpdateAsync(JournalEntry entry, CancellationToken cancellationToken = default) =>

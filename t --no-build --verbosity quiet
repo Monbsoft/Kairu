@@ -1,0 +1,10 @@
+[33m288c353[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/15-auth-github-multiuser[m[33m, [m[1;31morigin/feature/15-auth-github-multiuser[m[33m)[m docs(15b): ADR-010/011, emojis README, config launch.json
+[33m8c71a16[m Amélioration de l'authentification et de l'UI
+[33m978cdfd[m Implémentation de l'authentification JWT client
+[33m33e9cb4[m feat(auth): itération #15 — Auth GitHub + architecture multi-users
+[33m157f8bd[m[33m ([m[1;32mdev[m[33m)[m docs: mise à jour project-state.md pour itération #14 (sidebar icônes)
+[33m1615ce0[m[33m ([m[1;31morigin/dev[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat(ui): sidebar icônes seulement — style VS Code (itération #14) (#13)
+[33m568950a[m Feature/13 bc tickets (#12)
+[33m59d9d4e[m Convertit SuggestedType en chaîne dans la réponse API
+[33mad1b54a[m Utilise PomodoroSessionType au lieu de string pour SuggestedType
+[33md68f066[m Refactorisation : simplification du mapping des journaux

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Kairudev.Application.Identity.Commands.GetOrCreateUser;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +48,7 @@ public sealed class AuthController : ControllerBase
         [FromQuery] string? returnUrl = null,
         CancellationToken ct = default)
     {
-        var result = await HttpContext.AuthenticateAsync("GitHub");
+        var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         var webBase = _configuration["WebBaseUrl"] ?? "http://localhost:5010";
 
         if (!result.Succeeded)
@@ -75,6 +76,8 @@ public sealed class AuthController : ControllerBase
         }
 
         var token = GenerateJwt(userResult.Value);
+
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         if (!string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith("kairudev://", StringComparison.OrdinalIgnoreCase))
             return Redirect($"{returnUrl}?token={Uri.EscapeDataString(token)}");

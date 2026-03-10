@@ -102,13 +102,13 @@ builder.Services.AddScoped<ICurrentUserService, ClaimsCurrentUserService>();
 
 // Authentication — JWT Bearer + GitHub OAuth
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
-    ?? "kairudev-dev-secret-key-minimum-32-chars-please!!";
+    ?? throw new InvalidOperationException("Jwt:SecretKey must be configured in appsettings or user secrets.");
 
 builder.Services
     .AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = "GitHub";
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddCookie()
@@ -143,7 +143,8 @@ builder.Services
                 using var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
                 request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
-                using var response = await context.Backchannel.SendAsync(request);
+                request.Headers.UserAgent.ParseAdd("Kairudev/1.0");
+                using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
                 response.EnsureSuccessStatusCode();
                 var userJson = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
                 context.RunClaimActions(userJson.RootElement);
