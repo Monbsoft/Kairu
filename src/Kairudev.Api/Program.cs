@@ -104,6 +104,15 @@ builder.Services.AddScoped<ICurrentUserService, ClaimsCurrentUserService>();
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey must be configured in appsettings or user secrets.");
 
+if (jwtSecretKey.StartsWith('<') && jwtSecretKey.EndsWith('>'))
+    throw new InvalidOperationException(
+        "Jwt:SecretKey is set to a placeholder value. " +
+        "Set a real secret via user-secrets or an environment variable (Jwt__SecretKey).");
+
+if (jwtSecretKey.Length < 32)
+    throw new InvalidOperationException(
+        "Jwt:SecretKey must be at least 32 characters long for HS256 signing.");
+
 builder.Services
     .AddAuthentication(options =>
     {
