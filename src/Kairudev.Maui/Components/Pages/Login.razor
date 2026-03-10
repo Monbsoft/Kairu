@@ -1,9 +1,11 @@
 @page "/login"
 @using Kairudev.Maui.Auth
 @using Microsoft.Extensions.Configuration
+@using Microsoft.Extensions.Logging
 @inject MauiAuthService AuthService
 @inject NavigationManager Nav
 @inject IConfiguration Configuration
+@inject ILogger<Login> Logger
 
 <PageTitle>Connexion -- Kairudev</PageTitle>
 
@@ -145,7 +147,8 @@
         }
         catch (Exception ex)
         {
-            _error = $"Erreur : {ex.Message}";
+            Logger.LogError(ex, "Erreur inattendue lors de la connexion GitHub.");
+            _error = "Une erreur inattendue s'est produite. Veuillez réessayer.";
         }
         finally
         {
