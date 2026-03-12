@@ -19,6 +19,7 @@ public sealed class AuthController : ControllerBase
     private readonly GetOrCreateUserCommandHandler _handler;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthController> _logger;
+    private readonly IReadOnlySet<string> _allowedCallbackUrls;
 
     public AuthController(
         GetOrCreateUserCommandHandler handler,
@@ -28,6 +29,9 @@ public sealed class AuthController : ControllerBase
         _handler = handler;
         _configuration = configuration;
         _logger = logger;
+        _allowedCallbackUrls = new HashSet<string>(
+            configuration.GetSection("AllowedCallbackUrls").Get<string[]>() ?? [],
+            StringComparer.Ordinal);
     }
 
     [HttpGet("github")]
@@ -79,8 +83,13 @@ public sealed class AuthController : ControllerBase
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-        if (!string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith("kairudev://", StringComparison.OrdinalIgnoreCase))
-            return Redirect($"{returnUrl}?token={Uri.EscapeDataString(token)}");
+        if (!string.IsNullOrEmpty(returnUrl))
+        {
+            if (_allowedCallbackUrls.Contains(returnUrl))
+                return Redirect($"{returnUrl}?token={Uri.EscapeDataString(token)}");
+
+            _logger.LogWarning("Rejected non-whitelisted returnUrl: {ReturnUrl}", returnUrl);
+        }
 
         return Redirect($"{webBase}/login#token={Uri.EscapeDataString(token)}");
     }
