@@ -37,4 +37,27 @@ public sealed class UserIdTests
 
         Assert.Equal("github-42", id.ToString());
     }
+
+    [Fact]
+    public void Should_ThrowArgumentException_When_EmptyString()
+    {
+        Assert.Throws<ArgumentException>(() => UserId.From(string.Empty));
+    }
+
+    [Theory]
+    [InlineData("  ")]
+    [InlineData("\t")]
+    [InlineData("\n")]
+    public void Should_ThrowArgumentException_When_WhitespaceString(string value)
+    {
+        Assert.Throws<ArgumentException>(() => UserId.From(value));
+    }
+
+    [Fact]
+    public void Should_TrimValue_When_ValueHasSurroundingWhitespace()
+    {
+        var id = UserId.From("  github-42  ");
+
+        Assert.Equal("github-42", id.Value);
+    }
 }

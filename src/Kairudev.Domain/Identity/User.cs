@@ -10,7 +10,7 @@ public sealed class User : Entity<UserId>
     public string? Email { get; private set; }
 
     // For EF Core materialization
-    private User() : base(UserId.From(string.Empty)) { }
+    private User() : base() { }
 
     private User(UserId id, string githubId, string login, string displayName, string? email)
         : base(id)
