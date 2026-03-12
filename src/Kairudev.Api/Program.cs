@@ -104,13 +104,20 @@ builder.Services.AddScoped<ICurrentUserService, ClaimsCurrentUserService>();
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey must be configured in appsettings or user secrets.");
 
-var gitHubClientId = builder.Configuration["GitHub:ClientId"];
-if (string.IsNullOrEmpty(gitHubClientId))
-    throw new InvalidOperationException("GitHub:ClientId must be configured in appsettings or user secrets.");
+var gitHubClientId = builder.Configuration["GitHub:ClientId"] ?? string.Empty;
+var gitHubClientSecret = builder.Configuration["GitHub:ClientSecret"] ?? string.Empty;
 
-var gitHubClientSecret = builder.Configuration["GitHub:ClientSecret"];
-if (string.IsNullOrEmpty(gitHubClientSecret))
-    throw new InvalidOperationException("GitHub:ClientSecret must be configured in appsettings or user secrets.");
+if (!builder.Environment.IsDevelopment())
+{
+    if (string.IsNullOrEmpty(gitHubClientId))
+        throw new InvalidOperationException("GitHub:ClientId must be configured in appsettings or user secrets.");
+    if (string.IsNullOrEmpty(gitHubClientSecret))
+        throw new InvalidOperationException("GitHub:ClientSecret must be configured in appsettings or user secrets.");
+}
+else if (string.IsNullOrEmpty(gitHubClientId) || string.IsNullOrEmpty(gitHubClientSecret))
+{
+    Console.Error.WriteLine("WARNING: GitHub:ClientId or GitHub:ClientSecret is not configured. GitHub OAuth login will not function.");
+}
 
 builder.Services
     .AddAuthentication(options =>
