@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kairudev.Infrastructure.Migrations
 {
     [DbContext(typeof(KairudevDbContext))]
-    [Migration("20260316175553_InitialCreate")]
+    [Migration("20260316180355_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -29,21 +29,21 @@ namespace Kairudev.Infrastructure.Migrations
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("GitHubId")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Login")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -56,15 +56,15 @@ namespace Kairudev.Infrastructure.Migrations
             modelBuilder.Entity("Kairudev.Domain.Journal.JournalComment", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("EntryId")
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(1000)");
 
                     b.HasKey("Id");
 
@@ -76,24 +76,24 @@ namespace Kairudev.Infrastructure.Migrations
             modelBuilder.Entity("Kairudev.Domain.Journal.JournalEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("EventType")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("OccurredAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("OwnerId")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<Guid>("ResourceId")
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int?>("Sequence")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -103,33 +103,33 @@ namespace Kairudev.Infrastructure.Migrations
             modelBuilder.Entity("Kairudev.Domain.Pomodoro.PomodoroSession", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("EndedAt")
                         .HasColumnType("datetime2");
 
                     b.PrimitiveCollection<string>("LinkedTaskIdValues")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("LinkedTaskIds");
 
                     b.Property<string>("OwnerId")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("PlannedDurationMinutes")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("SessionType")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -144,27 +144,27 @@ namespace Kairudev.Infrastructure.Migrations
 
                     b.Property<string>("JiraApiToken")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("JiraBaseUrl")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("JiraEmail")
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("RingtonePreference")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("AlarmClock");
 
                     b.Property<string>("ThemePreference")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
@@ -174,7 +174,7 @@ namespace Kairudev.Infrastructure.Migrations
             modelBuilder.Entity("Kairudev.Domain.Tasks.DeveloperTask", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
@@ -184,24 +184,24 @@ namespace Kairudev.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("JiraTicketKey")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("OwnerId")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 
@@ -212,16 +212,16 @@ namespace Kairudev.Infrastructure.Migrations
                 {
                     b.Property<string>("UserId")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("LongBreakDurationMinutes")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("ShortBreakDurationMinutes")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("SprintDurationMinutes")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.HasKey("UserId");
 

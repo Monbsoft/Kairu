@@ -23,17 +23,15 @@ public sealed class KairudevDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configure SQL Server-specific column types
-        foreach (var property in modelBuilder.Model.GetEntityTypes()
-            .SelectMany(e => e.GetProperties()))
+        // Configure global string defaults to nvarchar(max) for SQL Server
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (property.ClrType == typeof(Guid) && property.GetMaxLength() == null)
+            foreach (var property in entityType.GetProperties())
             {
-                property.SetColumnType("nvarchar(36)");
-            }
-            else if (property.ClrType == typeof(DateTime) && property.GetMaxLength() == null)
-            {
-                property.SetColumnType("datetime2");
+                if (property.ClrType == typeof(string) && property.GetColumnType() == null)
+                {
+                    property.SetColumnType("nvarchar(max)");
+                }
             }
         }
 

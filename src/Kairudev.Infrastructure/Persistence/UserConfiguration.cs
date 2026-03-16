@@ -17,11 +17,11 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnType("nvarchar(50)")
             .HasMaxLength(50);
 
-        builder.Property(u => u.GitHubId).HasMaxLength(50).IsRequired();
+        builder.Property(u => u.GitHubId).HasColumnType("nvarchar(50)").HasMaxLength(50).IsRequired();
         builder.HasIndex(u => u.GitHubId).IsUnique();
 
-        builder.Property(u => u.Login).HasMaxLength(100).IsRequired();
-        builder.Property(u => u.DisplayName).HasMaxLength(200).IsRequired();
-        builder.Property(u => u.Email).HasMaxLength(200);
+        builder.Property(u => u.Login).HasColumnType("nvarchar(100)").HasMaxLength(100).IsRequired();
+        builder.Property(u => u.DisplayName).HasColumnType("nvarchar(200)").HasMaxLength(200).IsRequired();
+        builder.Property(u => u.Email).HasColumnType("nvarchar(200)").HasMaxLength(200);
     }
 }

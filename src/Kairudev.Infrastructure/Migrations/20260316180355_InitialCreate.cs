@@ -15,12 +15,12 @@ namespace Kairudev.Infrastructure.Migrations
                 name: "JournalEntries",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "nvarchar(36)", nullable: false),
-                    OwnerId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OwnerId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     OccurredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EventType = table.Column<string>(type: "TEXT", nullable: false),
-                    ResourceId = table.Column<Guid>(type: "nvarchar(36)", nullable: false),
-                    Sequence = table.Column<int>(type: "INTEGER", nullable: true)
+                    EventType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ResourceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Sequence = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -31,14 +31,14 @@ namespace Kairudev.Infrastructure.Migrations
                 name: "PomodoroSessions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "nvarchar(36)", nullable: false),
-                    OwnerId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    SessionType = table.Column<string>(type: "TEXT", nullable: false),
-                    Status = table.Column<string>(type: "TEXT", nullable: false),
-                    PlannedDurationMinutes = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OwnerId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    SessionType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PlannedDurationMinutes = table.Column<int>(type: "int", nullable: false),
                     StartedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     EndedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LinkedTaskIds = table.Column<string>(type: "TEXT", nullable: false)
+                    LinkedTaskIds = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -49,10 +49,10 @@ namespace Kairudev.Infrastructure.Migrations
                 name: "PomodoroSettings",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    SprintDurationMinutes = table.Column<int>(type: "INTEGER", nullable: false),
-                    ShortBreakDurationMinutes = table.Column<int>(type: "INTEGER", nullable: false),
-                    LongBreakDurationMinutes = table.Column<int>(type: "INTEGER", nullable: false)
+                    UserId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    SprintDurationMinutes = table.Column<int>(type: "int", nullable: false),
+                    ShortBreakDurationMinutes = table.Column<int>(type: "int", nullable: false),
+                    LongBreakDurationMinutes = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -63,14 +63,14 @@ namespace Kairudev.Infrastructure.Migrations
                 name: "Tasks",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "nvarchar(36)", nullable: false),
-                    OwnerId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
-                    Status = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OwnerId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    JiraTicketKey = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true)
+                    JiraTicketKey = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -82,10 +82,10 @@ namespace Kairudev.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    GitHubId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    Login = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    DisplayName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Email = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true)
+                    GitHubId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Login = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    DisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -97,11 +97,11 @@ namespace Kairudev.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    ThemePreference = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    RingtonePreference = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false, defaultValue: "AlarmClock"),
-                    JiraBaseUrl = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    JiraEmail = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
-                    JiraApiToken = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true)
+                    ThemePreference = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    RingtonePreference = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "AlarmClock"),
+                    JiraBaseUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    JiraEmail = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    JiraApiToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -112,9 +112,9 @@ namespace Kairudev.Infrastructure.Migrations
                 name: "JournalComments",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "nvarchar(36)", nullable: false),
-                    Text = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
-                    EntryId = table.Column<Guid>(type: "nvarchar(36)", nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Text = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    EntryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {

@@ -12,8 +12,8 @@ public sealed class JournalCommentConfiguration : IEntityTypeConfiguration<Journ
 
         builder.Property(c => c.Id)
             .HasConversion(id => id.Value, value => JournalCommentId.From(value))
-            .HasColumnType("nvarchar(36)");
+            .HasColumnType("uniqueidentifier");
 
-        builder.Property(c => c.Text).IsRequired().HasMaxLength(1000);
+        builder.Property(c => c.Text).HasColumnType("nvarchar(1000)").IsRequired().HasMaxLength(1000);
     }
 }

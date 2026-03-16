@@ -17,18 +17,20 @@ internal sealed class TaskConfiguration : IEntityTypeConfiguration<DeveloperTask
             .HasConversion(
                 id => id.Value,
                 value => TaskId.From(value))
-            .HasColumnType("nvarchar(36)")
+            .HasColumnType("uniqueidentifier")
             .ValueGeneratedNever();
 
         builder.Property(t => t.OwnerId)
             .HasConversion(v => v.Value, v => UserId.From(v))
+            .HasColumnType("nvarchar(50)")
             .HasMaxLength(50)
-            .IsRequired(false); // nullable for migration compatibility
+            .IsRequired(false);
 
         builder.Property(t => t.Title)
             .HasConversion(
                 title => title.Value,
                 value => TaskTitle.Create(value).Value)
+            .HasColumnType("nvarchar(200)")
             .HasMaxLength(TaskTitle.MaxLength)
             .IsRequired();
 
@@ -36,10 +38,12 @@ internal sealed class TaskConfiguration : IEntityTypeConfiguration<DeveloperTask
             .HasConversion(
                 desc => desc != null ? desc.Value : null,
                 value => TaskDescription.Create(value).Value)
+            .HasColumnType("nvarchar(1000)")
             .HasMaxLength(TaskDescription.MaxLength);
 
         builder.Property(t => t.Status)
             .HasConversion<string>()
+            .HasColumnType("nvarchar(max)")
             .IsRequired();
 
         builder.Property(t => t.CreatedAt).HasColumnType("datetime2").IsRequired();
@@ -49,6 +53,7 @@ internal sealed class TaskConfiguration : IEntityTypeConfiguration<DeveloperTask
             .HasConversion(
                 key => key != null ? key.Value : null,
                 value => value != null ? JiraTicketKey.Create(value).Value : null)
+            .HasColumnType("nvarchar(50)")
             .HasMaxLength(JiraTicketKey.MaxLength);
     }
 }

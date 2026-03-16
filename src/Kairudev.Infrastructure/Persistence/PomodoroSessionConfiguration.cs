@@ -17,23 +17,26 @@ internal sealed class PomodoroSessionConfiguration : IEntityTypeConfiguration<Po
             .HasConversion(
                 id => id.Value,
                 value => PomodoroSessionId.From(value))
-            .HasColumnType("nvarchar(36)")
+            .HasColumnType("uniqueidentifier")
             .ValueGeneratedNever();
 
         builder.Property(s => s.OwnerId)
             .HasConversion(v => v.Value, v => UserId.From(v))
+            .HasColumnType("nvarchar(50)")
             .HasMaxLength(50)
-            .IsRequired(false); // nullable for migration compatibility
+            .IsRequired(false);
 
         builder.Property(s => s.SessionType)
             .HasConversion<string>()
+            .HasColumnType("nvarchar(max)")
             .IsRequired();
 
         builder.Property(s => s.Status)
             .HasConversion<string>()
+            .HasColumnType("nvarchar(max)")
             .IsRequired();
 
-        builder.Property(s => s.PlannedDurationMinutes).IsRequired();
+        builder.Property(s => s.PlannedDurationMinutes).HasColumnType("int").IsRequired();
         builder.Property(s => s.StartedAt).HasColumnType("datetime2");
         builder.Property(s => s.EndedAt).HasColumnType("datetime2");
 
@@ -42,6 +45,7 @@ internal sealed class PomodoroSessionConfiguration : IEntityTypeConfiguration<Po
 
         // Stores the linked task IDs as a JSON array of GUIDs (EF Core 8+ primitive collection)
         builder.PrimitiveCollection(s => s.LinkedTaskIdValues)
-            .HasColumnName("LinkedTaskIds");
+            .HasColumnName("LinkedTaskIds")
+            .HasColumnType("nvarchar(max)");
     }
 }
