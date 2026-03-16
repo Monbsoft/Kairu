@@ -1043,6 +1043,35 @@ sequenceDiagram
 
 ---
 
+## ADR-005 — Déploiement Azure (itération #16)
+
+**Décision :** Déployer Kairudev sur Azure App Service (Linux) avec une seule Web App servant l'API .NET 10 et le Blazor WASM.
+
+**Contexte :** Compte développeur Azure avec quotas limitées (Free VMs = 0, Basic VMs = 0, Standard VMs = 0). West Europe saturé pour Azure SQL.
+
+**Choix retenus :**
+
+| Composant | Choix | Raison |
+|---|---|---|
+| **IaC** | Bicep (subscription scope) | Crée le RG automatiquement |
+| **Region** | `northeurope` | West Europe saturé pour SQL Server |
+| **App Service Plan** | F1 (Free) | Seul tier disponible sur compte dev |
+| **Azure SQL** | S0 (Standard, 10 DTU) | Pas de quota Basic sur compte dev |
+| **Déploiement** | ZIP via `az webapp deploy` | `az webapp up` incompatible avec binaires compilés |
+| **ZIP** | `System.IO.Compression.ZipFile` | `Compress-Archive` crée des paths `\` incompatibles Linux/rsync |
+| **Blazor WASM** | Intégré dans wwwroot de l'API | Pas besoin de Static Web Apps séparé |
+| **Migrations** | `db.Database.Migrate()` au démarrage | Évite script manuel sur Query Editor |
+| **Config DB** | `SQL_CONNECTION_STRING` env var | `DbContextFactory` détecte SQL Server vs SQLite |
+
+**Script de redéploiement :**
+```powershell
+powershell -ExecutionPolicy Bypass -File .\infra\deploy-linux.ps1 -Environment prod
+```
+
+**URLs production :**
+- App : `https://kairudev-prod.azurewebsites.net`
+- SQL : `sql-kairudev-prod.database.windows.net`
+
 ---
 
 ## Bounded Context : Identity ✅ (itérations #15 + #15b)

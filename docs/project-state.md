@@ -7,7 +7,7 @@
 
 ## Résumé état actuel
 
-**Dernière itération : #16 — Déploiement Azure (Bicep + CLI)** (2026-03-14) ✅ COMPLÉTÉE
+**Dernière itération : #16 — Déploiement Azure (Bicep + CLI)** (2026-03-16) ✅ COMPLÉTÉE
 
 **Bounded Contexts opérationnels :**
 - **Identity** : `User`, `UserId`, `IUserRepository`, `GetOrCreateUserCommandHandler` ✅
@@ -49,23 +49,27 @@
 - ✅ **Redirection intelligente** : `/` → `/dashboard` si authentifié, `/login` → `/dashboard` après login
 
 **Déploiement Azure :**
-- ✅ **Infrastructure as Code (Bicep)** : `infra/main.bicep` + `infra/resources.bicep` (App Service Plan F1, Web App, Azure SQL S0, firewalls)
-- ✅ **Paramètres par environnement** : `infra/main.dev.bicepparam`, `infra/main.prod.bicepparam` (region: northeurope)
-- ✅ **Déploiement manuel via CLI** : `az deployment sub create` + `az webapp deploy` (zip deploy)
-- ✅ **Configuration DbContextFactory** : `SQL_CONNECTION_STRING` env var pour SQL Server (migrations script en Azure)
-- ✅ **Intégration Blazor WASM + API** : wwwroot copié dans l'API, serveur depuis une seule Web App
-- ✅ **Documentation** : `infra/README.md` (étapes complètes : secrets → Bicep → migrations SQL → API → Blazor)
-- ✅ **Production en direct** : https://kairudev-prod.azurewebsites.net (Blazor + API + SQL)
+- ✅ **Infrastructure as Code (Bicep)** : `infra/main.bicep` (subscription scope → crée RG) + `infra/resources.bicep` (App Service Plan F1, Web App .NET 10, Azure SQL S0, firewalls)
+- ✅ **Paramètres par environnement** : `infra/main.dev.bicepparam`, `infra/main.prod.bicepparam` (region: northeurope — West Europe saturé pour SQL)
+- ✅ **Script de déploiement** : `infra/deploy-linux.ps1` — build + publish API + publish Blazor + copie wwwroot + ZIP cross-platform (paths `/`) + `az webapp deploy`
+- ✅ **ZIP cross-platform** : `System.IO.Compression.ZipFile` avec chemins Linux `/` (évite l'erreur rsync backslash `\`)
+- ✅ **DbContextFactory configurable** : `SQL_CONNECTION_STRING` env var → SQL Server, sinon SQLite (dev local)
+- ✅ **Intégration Blazor WASM + API** : wwwroot du Blazor copié dans l'API, une seule Web App Azure sert tout
+- ✅ **appsettings.Production.json** Blazor : `ApiBaseUrl` → `https://kairudev-prod.azurewebsites.net`
+- ✅ **Auto-migration au démarrage** : `db.Database.Migrate()` → EF Core applique les migrations SQL Server au boot
+- ✅ **Documentation** : `infra/README.md` (étapes complètes : prérequis → secrets → Bicep → migrations → déploiement → vérification)
+- ✅ **Production en direct** : https://kairudev-prod.azurewebsites.net
 
 **Tests :** 171 au total ✅ (90 Domain + 59 Application + 17 Infrastructure)
+⚠️ **Dette technique** : Tests d'intégration (`Kairudev.IntegrationTests`) non maintenus — step definitions obsolètes vs domain refactorisé
 
-**Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite (local), **Azure (App Service F1 + Azure SQL S0 + northeurope)**
+**Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite (local), **Azure (App Service F1 + Azure SQL S0, northeurope)**
 
 **Déploiement prod :**
-- Resource Group : `rg-kairudev-prod`
-- Web App : `kairudev-prod.azurewebsites.net` (F1)
-- SQL Server : `sql-kairudev-prod.database.windows.net` (S0, Standard tier)
-- Migrations : script SQL généré depuis EF Core, exécuté via Query Editor
+- Resource Group : `rg-kairudev-prod` (northeurope)
+- Web App : `kairudev-prod.azurewebsites.net` (Plan F1, Linux, .NET 10)
+- SQL Server : `sql-kairudev-prod.database.windows.net` (S0, Standard)
+- Redéploiement : `powershell -ExecutionPolicy Bypass -File .\infra\deploy-linux.ps1 -Environment prod`
 
 ---
 
@@ -97,7 +101,7 @@
 | ~~#14~~ | ~~Navigation sidebar — icônes seulement, style VS Code (Web + MAUI)~~ | ~~✅ Livré~~ | ~~2026-03-03~~ |
 | ~~#15~~ | ~~Auth GitHub + Multi-users — JWT, OwnerId sur toutes les entités, ICurrentUserService~~ | ~~✅ Livré~~ | ~~2026-03-04~~ |
 | ~~#15b~~ | ~~Auth client Web + MAUI — Login.razor, JwtAuthenticationStateProvider, Landing page, Dashboard~~ | ~~✅ Livré~~ | ~~2026-03-09~~ |
-| ~~#16~~ | ~~Déploiement Azure (Bicep) — Infrastructure, CI/CD, documentation~~ | ~~✅ Livré~~ | ~~2026-03-13~~ |
+| ~~#16~~ | ~~Déploiement Azure — Bicep (subscription scope), CLI, ZIP cross-platform, deploy-linux.ps1, prod en direct~~ | ~~✅ Livré~~ | ~~2026-03-16~~ |
 
 ---
 
