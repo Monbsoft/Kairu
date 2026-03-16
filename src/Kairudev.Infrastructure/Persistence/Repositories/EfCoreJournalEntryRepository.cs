@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kairudev.Infrastructure.Persistence.Repositories;
 
-public sealed class SqliteJournalEntryRepository : IJournalEntryRepository
+public sealed class EfCoreJournalEntryRepository : IJournalEntryRepository
 {
     private readonly KairudevDbContext _context;
 
-    public SqliteJournalEntryRepository(KairudevDbContext context) => _context = context;
+    public EfCoreJournalEntryRepository(KairudevDbContext context) => _context = context;
 
     public async Task AddAsync(JournalEntry entry, CancellationToken cancellationToken = default)
     {

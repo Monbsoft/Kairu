@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kairudev.Infrastructure.Persistence.Repositories;
 
-internal sealed class SqliteUserSettingsRepository : IUserSettingsRepository
+internal sealed class EfCoreUserSettingsRepository : IUserSettingsRepository
 {
     private readonly KairudevDbContext _context;
 
-    public SqliteUserSettingsRepository(KairudevDbContext context)
+    public EfCoreUserSettingsRepository(KairudevDbContext context)
     {
         _context = context;
     }

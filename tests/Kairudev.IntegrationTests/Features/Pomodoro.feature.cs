@@ -39,8 +39,8 @@ namespace Kairudev.IntegrationTests.Features
         public static async System.Threading.Tasks.Task FeatureSetupAsync()
         {
             testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly(null, global::Reqnroll.xUnit.ReqnrollPlugin.XUnitParallelWorkerTracker.Instance.GetWorkerId());
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Pomodoro Sessions", "  As a developer\r\n  I want to track my work sessions with Pomodoro technique\r\n  S" +
-                    "o that I can measure my productivity", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Pomodoro Sessions", ("  As a developer\r\n  I want to track my work sessions with Pomodoro technique\r\n  S" +
+                    "o that I can measure my productivity"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
             await testRunner.OnFeatureStartAsync(featureInfo);
         }
         

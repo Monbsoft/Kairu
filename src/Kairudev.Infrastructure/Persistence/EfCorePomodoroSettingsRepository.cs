@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kairudev.Infrastructure.Persistence;
 
-internal sealed class SqlitePomodoroSettingsRepository : IPomodoroSettingsRepository
+internal sealed class EfCorePomodoroSettingsRepository : IPomodoroSettingsRepository
 {
     private readonly KairudevDbContext _context;
 
-    public SqlitePomodoroSettingsRepository(KairudevDbContext context)
+    public EfCorePomodoroSettingsRepository(KairudevDbContext context)
     {
         _context = context;
     }

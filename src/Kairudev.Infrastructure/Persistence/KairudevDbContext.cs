@@ -23,18 +23,13 @@ public sealed class KairudevDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configure global string defaults to nvarchar(max) for SQL Server only
-        // SQLite doesn't support this and will fail migrations
-        if (!Database.IsSqlite())
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            foreach (var property in entityType.GetProperties())
             {
-                foreach (var property in entityType.GetProperties())
+                if (property.ClrType == typeof(string) && property.GetColumnType() == null)
                 {
-                    if (property.ClrType == typeof(string) && property.GetColumnType() == null)
-                    {
-                        property.SetColumnType("nvarchar(max)");
-                    }
+                    property.SetColumnType("nvarchar(max)");
                 }
             }
         }

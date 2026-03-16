@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kairudev.Infrastructure.Persistence;
 
-internal sealed class SqliteTaskRepository : ITaskRepository
+internal sealed class EfCoreTaskRepository : ITaskRepository
 {
     private readonly KairudevDbContext _context;
 
-    public SqliteTaskRepository(KairudevDbContext context) => _context = context;
+    public EfCoreTaskRepository(KairudevDbContext context) => _context = context;
 
     public async Task AddAsync(DeveloperTask task, CancellationToken cancellationToken = default)
     {

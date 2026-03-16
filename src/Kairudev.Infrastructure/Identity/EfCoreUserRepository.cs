@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kairudev.Infrastructure.Identity;
 
-internal sealed class SqliteUserRepository : IUserRepository
+internal sealed class EfCoreUserRepository : IUserRepository
 {
     private readonly KairudevDbContext _context;
 
-    public SqliteUserRepository(KairudevDbContext context) => _context = context;
+    public EfCoreUserRepository(KairudevDbContext context) => _context = context;
 
     public async Task<User?> GetByGitHubIdAsync(string githubId, CancellationToken ct = default)
         => await _context.Users.FirstOrDefaultAsync(u => u.GitHubId == githubId, ct);

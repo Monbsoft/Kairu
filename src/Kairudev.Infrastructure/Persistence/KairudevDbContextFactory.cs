@@ -7,13 +7,11 @@ internal sealed class KairudevDbContextFactory : IDesignTimeDbContextFactory<Kai
 {
     public KairudevDbContext CreateDbContext(string[] args)
     {
-        var connectionString = Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING");
-        var builder = new DbContextOptionsBuilder<KairudevDbContext>();
+        var connectionString = Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING")
+            ?? "Server=(localdb)\\mssqllocaldb;Database=kairudev;Trusted_Connection=true;";
 
-        if (!string.IsNullOrWhiteSpace(connectionString))
-            builder.UseSqlServer(connectionString);
-        else
-            builder.UseSqlite("Data Source=kairudev.db");
+        var builder = new DbContextOptionsBuilder<KairudevDbContext>();
+        builder.UseSqlServer(connectionString);
 
         return new KairudevDbContext(builder.Options);
     }

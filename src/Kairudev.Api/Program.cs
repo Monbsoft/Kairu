@@ -45,8 +45,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+// Get connection string: prioritize SQL_CONNECTION_STRING (Azure/production),
+// then appsettings ConnectionStrings:Default (development)
 var connectionString = builder.Configuration.GetConnectionString("Default")
-    ?? "Data Source=kairudev.db";
+    ?? Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING")
+    ?? throw new InvalidOperationException(
+        "A SQL Server connection string must be configured via 'ConnectionStrings:Default' or the 'SQL_CONNECTION_STRING' environment variable.");
 
 builder.Services.AddInfrastructure(connectionString);
 
@@ -184,11 +188,22 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+// Apply database migrations safely
+try
 {
-    var db = scope.ServiceProvider.GetRequiredService<KairudevDbContext>();
-    // Appliquer les migrations (SQLite en dev, SQL Server en prod)
-    db.Database.Migrate();
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<KairudevDbContext>();
+        await db.Database.MigrateAsync();
+    }
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"ERROR: Failed to apply migrations: {ex.Message}");
+    // Log the error but don't crash the app if migrations fail
+    // This can happen if the database connection is not ready yet
+    if (!builder.Environment.IsProduction())
+        throw;
 }
 
 if (app.Environment.IsDevelopment())

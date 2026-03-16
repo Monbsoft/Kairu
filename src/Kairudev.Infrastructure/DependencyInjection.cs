@@ -20,26 +20,18 @@ public static class DependencyInjection
         string connectionString)
     {
         services.AddDbContext<KairudevDbContext>(options =>
-        {
-            if (IsSqliteConnectionString(connectionString))
-                options.UseSqlite(connectionString);
-            else
-                options.UseSqlServer(connectionString);
-        });
+            options.UseSqlServer(connectionString));
 
-        services.AddScoped<IUserRepository, SqliteUserRepository>();
-        services.AddScoped<ITaskRepository, SqliteTaskRepository>();
-        services.AddScoped<IPomodoroSessionRepository, SqlitePomodoroSessionRepository>();
-        services.AddScoped<IPomodoroSettingsRepository, SqlitePomodoroSettingsRepository>();
-        services.AddScoped<IJournalEntryRepository, SqliteJournalEntryRepository>();
-        services.AddScoped<IUserSettingsRepository, SqliteUserSettingsRepository>();
+        // All repositories use EF Core (works with both SQLite and SQL Server)
+        services.AddScoped<IUserRepository, EfCoreUserRepository>();
+        services.AddScoped<ITaskRepository, EfCoreTaskRepository>();
+        services.AddScoped<IPomodoroSessionRepository, EfCorePomodoroSessionRepository>();
+        services.AddScoped<IPomodoroSettingsRepository, EfCorePomodoroSettingsRepository>();
+        services.AddScoped<IJournalEntryRepository, EfCoreJournalEntryRepository>();
+        services.AddScoped<IUserSettingsRepository, EfCoreUserSettingsRepository>();
 
         services.AddHttpClient<IJiraTicketService, JiraApiClient>();
 
         return services;
     }
-
-    private static bool IsSqliteConnectionString(string connectionString) =>
-        connectionString.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase)
-        && !connectionString.Contains(';');
 }

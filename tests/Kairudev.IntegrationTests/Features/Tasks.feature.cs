@@ -39,8 +39,8 @@ namespace Kairudev.IntegrationTests.Features
         public static async System.Threading.Tasks.Task FeatureSetupAsync()
         {
             testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly(null, global::Reqnroll.xUnit.ReqnrollPlugin.XUnitParallelWorkerTracker.Instance.GetWorkerId());
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Task Management", "  As a developer\r\n  I want to manage my daily tasks\r\n  So that I can organize my " +
-                    "work", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Task Management", ("  As a developer\r\n  I want to manage my daily tasks\r\n  So that I can organize my " +
+                    "work"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
             await testRunner.OnFeatureStartAsync(featureInfo);
         }
         
@@ -109,8 +109,7 @@ namespace Kairudev.IntegrationTests.Features
     await testRunner.GivenAsync("I have a fresh database", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 8
-    await testRunner.WhenAsync("I create a task with title \"Implement API\" and description \"Build REST endpoints\"" +
-                        "", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I create a task with title \"Implement API\" and description \"Build REST endpoints\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 9
     await testRunner.ThenAsync("the task should be created successfully", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
