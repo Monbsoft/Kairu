@@ -48,28 +48,14 @@
 - ✅ **NavMenu** : icône dashboard + bouton déconnexion SVG (logout → landing)
 - ✅ **Redirection intelligente** : `/` → `/dashboard` si authentifié, `/login` → `/dashboard` après login
 
-**Déploiement Azure :**
-- ✅ **Infrastructure as Code (Bicep)** : `infra/main.bicep` (subscription scope → crée RG) + `infra/resources.bicep` (App Service Plan F1, Web App .NET 10, Azure SQL S0, firewalls)
-- ✅ **Paramètres par environnement** : `infra/main.dev.bicepparam`, `infra/main.prod.bicepparam` (region: northeurope — West Europe saturé pour SQL)
-- ✅ **Script de déploiement** : `infra/deploy-linux.ps1` — build + publish API + publish Blazor + copie wwwroot + ZIP cross-platform (paths `/`) + `az webapp deploy`
-- ✅ **ZIP cross-platform** : `System.IO.Compression.ZipFile` avec chemins Linux `/` (évite l'erreur rsync backslash `\`)
-- ✅ **DbContextFactory configurable** : `SQL_CONNECTION_STRING` env var → SQL Server, sinon SQLite (dev local)
-- ✅ **Intégration Blazor WASM + API** : wwwroot du Blazor copié dans l'API, une seule Web App Azure sert tout
-- ✅ **appsettings.Production.json** Blazor : `ApiBaseUrl` → `https://kairudev-prod.azurewebsites.net`
-- ✅ **Auto-migration au démarrage** : `db.Database.Migrate()` → EF Core applique les migrations SQL Server au boot
-- ✅ **Documentation** : `infra/README.md` (étapes complètes : prérequis → secrets → Bicep → migrations → déploiement → vérification)
-- ✅ **Production en direct** : https://kairudev-prod.azurewebsites.net
+**Déploiement :**
+- ✅ Application en production : https://kairudev-prod.azurewebsites.net
+- ✅ Redéploiement : `powershell -ExecutionPolicy Bypass -File .\infra\deploy-linux.ps1 -Environment prod`
 
 **Tests :** 171 au total ✅ (90 Domain + 59 Application + 17 Infrastructure)
 ⚠️ **Dette technique** : Tests d'intégration (`Kairudev.IntegrationTests`) non maintenus — step definitions obsolètes vs domain refactorisé
 
-**Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite (local), **Azure (App Service F1 + Azure SQL S0, northeurope)**
-
-**Déploiement prod :**
-- Resource Group : `rg-kairudev-prod` (northeurope)
-- Web App : `kairudev-prod.azurewebsites.net` (Plan F1, Linux, .NET 10)
-- SQL Server : `sql-kairudev-prod.database.windows.net` (S0, Standard)
-- Redéploiement : `powershell -ExecutionPolicy Bypass -File .\infra\deploy-linux.ps1 -Environment prod`
+**Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite (local) + **Azure SQL (prod)**
 
 ---
 
