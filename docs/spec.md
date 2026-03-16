@@ -67,6 +67,13 @@ flowchart LR
             UCA2(["Se déconnecter"])
             UCA3(["Accéder à une page protégée"])
         end
+
+        subgraph SprintBC["Bounded Context : Sprint"]
+            SP01(["Démarrer un sprint libre"])
+            SP02(["Terminer un sprint libre"])
+            SP03(["Interrompre un sprint libre"])
+            SP04(["Lier une tâche au sprint"])
+        end
     end
 
     Dev --> UC1
@@ -93,6 +100,10 @@ flowchart LR
     Dev --> UCA1
     Dev --> UCA2
     Dev --> UCA3
+    Dev --> SP01
+    Dev --> SP02
+    Dev --> SP03
+    Dev --> SP04
 ```
 
 ---
@@ -1237,6 +1248,15 @@ sequenceDiagram
   - **Contrainte** : un cookie de session éphémère est émis pendant le callback (durée de vie très courte, non persisté côté client).
   - **Sécurité** : le JWT est transmis via fragment URL (`#token=...`), jamais en query string (non loggé dans les serveurs proxy).
 
+### ADR-012 — BC Sprint : timer client-side sans état serveur en cours de session
+
+- **Contexte :** Le BC Sprint libre utilise un chronomètre count-up (durée variable, non définie à l'avance). Deux options : créer un enregistrement serveur au démarrage (comme Pomodoro), ou ne persister qu'à la fin.
+- **Décision :** Timer purement client-side. Le serveur ne connaît pas de sprint "en cours". L'API reçoit un unique `POST /api/sprints` à la fin, avec `startedAt`, `endedAt`, `outcome` (Completed|Interrupted) et `linkedTaskId?` fournis par le client.
+- **Conséquences :**
+  - **Avantage** : pas d'état fantôme en base (pas de sessions `InProgress` orphelines), implémentation minimale.
+  - **Contrainte** : si l'onglet est fermé pendant un sprint, rien n'est enregistré — comportement voulu.
+  - **Journal** : les entrées `SprintStarted` et `SprintCompleted/Interrupted` sont créées avec des timestamps rétroactifs (`startedAt` passé en paramètre). Les types d'événements Journal sont réutilisés tels quels (pas de nouveaux types `FreeSprintStarted/...`). Le journal ne distingue pas un sprint Pomodoro d'un sprint libre — comportement voulu pour v1.
+
 ### ADR-011 — Landing page `[AllowAnonymous]` + Dashboard `[Authorize]` + fragment URL pour JWT
 - **Contexte :** Blazor WASM utilise `AuthorizeRouteView` qui intercepte toutes les navigations. La page d'accueil (`/`) doit être publique pour présenter le produit aux utilisateurs non connectés. Le JWT émis par l'API doit parvenir à Blazor sans être exposé dans l'historique HTTP.
 - **Décision :**
@@ -1248,6 +1268,101 @@ sequenceDiagram
   - **Avantage** : JWT jamais exposé dans les logs serveur ou proxy ; expérience utilisateur cohérente (landing → login → dashboard).
   - **Contrainte** : le fragment est visible dans l'URL le temps d'un rendu Blazor ; `Login.razor` doit nettoyer la barre d'adresse après extraction.
   - **Routing** : `AuthorizeRouteView` redirige vers `/login` (configurable via `<NotAuthorized>`) pour toutes les pages `[Authorize]`.
+
+---
+
+## Bounded Context : Sprint
+
+### Modèle du domaine
+
+```mermaid
+classDiagram
+    class SprintSession {
+        +SprintSessionId Id
+        +SprintName Name
+        +UserId OwnerId
+        +DateTimeOffset StartedAt
+        +DateTimeOffset EndedAt
+        +SprintOutcome Outcome
+        +TaskId? LinkedTaskId
+        +Duration Duration (computed)
+        +Record(name, ownerId, startedAt, endedAt, outcome, linkedTaskId?) SprintSession
+    }
+
+    class SprintSessionId {
+        +Guid Value
+        +New() SprintSessionId
+    }
+
+    class SprintName {
+        +string Value
+        +MaxLength = 200
+        +Create(value) Result~SprintName~
+    }
+
+    class SprintOutcome {
+        <<enumeration>>
+        Completed
+        Interrupted
+    }
+
+    class ISprintSessionRepository {
+        <<interface>>
+        +AddAsync(session)
+        +GetByDateAsync(date, ownerId) IReadOnlyList~SprintSession~
+    }
+
+    SprintSession --> SprintSessionId : identifié par
+    SprintSession --> SprintName : possède
+    SprintSession --> SprintOutcome : résultat
+    ISprintSessionRepository ..> SprintSession : gère
+```
+
+### Use Cases
+
+| Code | Nom | Commande / Requête |
+|---|---|---|
+| SP-01 | RecordSprint | `RecordSprintCommand` |
+| SP-02 | GetTodaySprints | `GetTodaySprintsQuery` |
+
+### UC-SP-01 — Enregistrer un sprint libre
+
+**Acteur principal :** Développeur
+**Préconditions :** Utilisateur authentifié, sprint démarré côté client
+**Postconditions (succès) :** Sprint persisté. Journal : entrée `SprintStarted` (rétroactive, timestamp = `startedAt`) + `SprintCompleted` ou `SprintInterrupted`. Types d'événements réutilisés depuis le BC Journal (ADR-012).
+
+**Scénario nominal :**
+1. L'utilisateur voit le champ "Nom du sprint" (défaut : "Sprint #N", N = nb sprints du jour + 1)
+2. Il modifie le nom si souhaité (seulement avant démarrage)
+3. Il sélectionne optionnellement une tâche liée dans un dropdown
+4. Il clique **Démarrer** → le client mémorise `startedAt = now`, le chronomètre s'incrémente
+5. Il clique **Terminer** → le client appelle `POST /api/sprints` avec `outcome=Completed`
+6. Le sprint apparaît dans l'historique du jour
+
+**Scénarios alternatifs :**
+- A1 : Clic sur **Interrompre** → `POST /api/sprints` avec `outcome=Interrupted`, durée réelle enregistrée
+- A2 : Nom vide → nom par défaut "Sprint #N"
+- A3 : Aucune tâche sélectionnée → `linkedTaskId = null`
+
+**Scénarios d'exception :**
+- E1 : Fermeture de l'onglet pendant le chrono → rien n'est enregistré (timer abandonné, décision ADR-012)
+- E2 : `endedAt <= startedAt` → erreur de validation domaine
+
+**Critères d'acceptance :**
+- [ ] Le chronomètre s'incrémente en temps réel (PeriodicTimer côté client)
+- [ ] Le nom n'est plus modifiable une fois le sprint démarré
+- [ ] La durée réelle (`endedAt - startedAt`) est persistée
+- [ ] Le journal reçoit `SprintStarted` (timestamp = `startedAt`) + `SprintCompleted/Interrupted`
+- [ ] L'historique du jour liste les sprints enregistrés avec nom, durée et résultat
+
+### UC-SP-02 — Consulter les sprints du jour
+
+**Acteur principal :** Développeur
+**Préconditions :** Utilisateur authentifié
+**Postconditions :** Liste des sprints enregistrés aujourd'hui, triés chronologiquement.
+
+**Critères d'acceptance :**
+- [ ] Affiche nom, durée, outcome et tâche liée (si présente) pour chaque sprint
 
 ---
 

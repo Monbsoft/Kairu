@@ -7,6 +7,8 @@
 
 ## Résumé état actuel
 
+**Itération en cours : #17 — BC Sprint libre (chronomètre à durée variable)** 🔄 EN COURS
+
 **Dernière itération : #16 — Déploiement Azure (Bicep + CLI)** (2026-03-16) ✅ COMPLÉTÉE
 
 **Bounded Contexts opérationnels :**
@@ -16,6 +18,7 @@
 - **Journal** : 6 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
 - **Settings** : 4 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
 - **Tickets** : 1 Query — **Architecture CQRS** ✅
+- **Sprint** : BC indépendant — itération #17 en cours 🔄
 
 **Architecture Application Layer :**
 - ✅ **CQRS sans MediatR** : Commands (écriture) + Queries (lecture)
@@ -88,6 +91,7 @@
 | ~~#15~~ | ~~Auth GitHub + Multi-users — JWT, OwnerId sur toutes les entités, ICurrentUserService~~ | ~~✅ Livré~~ | ~~2026-03-04~~ |
 | ~~#15b~~ | ~~Auth client Web + MAUI — Login.razor, JwtAuthenticationStateProvider, Landing page, Dashboard~~ | ~~✅ Livré~~ | ~~2026-03-09~~ |
 | ~~#16~~ | ~~Déploiement Azure — Bicep (subscription scope), CLI, ZIP cross-platform, deploy-linux.ps1, prod en direct~~ | ~~✅ Livré~~ | ~~2026-03-16~~ |
+| #17 | BC Sprint libre — chronomètre count-up, durée variable, lien tâche, journal auto | 🔄 En cours | 2026-03-17 |
 
 ---
 
