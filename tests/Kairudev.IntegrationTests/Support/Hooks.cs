@@ -16,6 +16,8 @@ public class Hooks
     public void BeforeScenario()
     {
         var dbContext = new DatabaseContext();
+        // Ensure clean state for each scenario
+        dbContext.Reset();
         _scenarioContext["DatabaseContext"] = dbContext;
     }
 
