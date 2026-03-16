@@ -212,10 +212,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ServeUnknownFileTypes = true,
+    DefaultContentType = "application/octet-stream"
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapDefaultEndpoints();
+app.MapFallbackToFile("index.html");
 
 app.Run();
