@@ -23,7 +23,7 @@ public sealed class GetSuggestedSessionTypeQueryHandlerTests
     {
         for (var i = 0; i < count; i++)
         {
-            var s = PomodoroSession.Create(type, 25, UserId.New());
+            var s = PomodoroSession.Create(type, 25, FakeCurrentUserService.TestUserId);
             s.Start(DateTime.UtcNow);
             s.Complete(DateTime.UtcNow);
             _sessionRepository.Sessions.Add(s);

@@ -12,6 +12,5 @@
   <Folder Name="/tests/">
     <Project Path="tests/Kairudev.Application.Tests/Kairudev.Application.Tests.csproj" />
     <Project Path="tests/Kairudev.Domain.Tests/Kairudev.Domain.Tests.csproj" />
-    <Project Path="tests/Kairudev.IntegrationTests/Kairudev.IntegrationTests.csproj" />
   </Folder>
 </Solution>

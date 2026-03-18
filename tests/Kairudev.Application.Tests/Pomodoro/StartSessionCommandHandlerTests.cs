@@ -28,7 +28,7 @@ public sealed class StartSessionCommandHandlerTests
     [Fact]
     public async Task Should_ReturnFailure_When_ASessionIsAlreadyActive()
     {
-        var existing = PomodoroSession.Create(PomodoroSessionType.Sprint, 25, UserId.New());
+        var existing = PomodoroSession.Create(PomodoroSessionType.Sprint, 25, FakeCurrentUserService.TestUserId);
         existing.Start(DateTime.UtcNow);
         _sessionRepository.Sessions.Add(existing);
 

@@ -27,7 +27,7 @@ public sealed class CompleteSessionCommandHandlerTests
 
     private PomodoroSession AddActiveSession(PomodoroSessionType type)
     {
-        var session = PomodoroSession.Create(type, 25, UserId.New());
+        var session = PomodoroSession.Create(type, 25, FakeCurrentUserService.TestUserId);
         session.Start(DateTime.UtcNow);
         _sessionRepository.Sessions.Add(session);
         return session;
@@ -85,7 +85,7 @@ public sealed class CompleteSessionCommandHandlerTests
                 JournalEventType.BreakCompleted,
                 Guid.NewGuid(),
                 DateTime.UtcNow.AddHours(-1),
-                UserId.New(),
+                FakeCurrentUserService.TestUserId,
                 1));
 
         AddActiveSession(PomodoroSessionType.ShortBreak);

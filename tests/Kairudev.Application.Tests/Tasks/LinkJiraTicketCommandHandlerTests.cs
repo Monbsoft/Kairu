@@ -18,7 +18,7 @@ public sealed class LinkJiraTicketCommandHandlerTests
     private static DeveloperTask CreateTask()
     {
         var title = TaskTitle.Create("Test task").Value;
-        return DeveloperTask.Create(title, null, DateTime.UtcNow, UserId.New());
+        return DeveloperTask.Create(title, null, DateTime.UtcNow, FakeCurrentUserService.TestUserId);
     }
 
     [Fact]

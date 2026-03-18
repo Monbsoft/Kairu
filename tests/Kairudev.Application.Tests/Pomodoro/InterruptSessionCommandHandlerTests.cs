@@ -25,7 +25,7 @@ public sealed class InterruptSessionCommandHandlerTests
 
     private PomodoroSession AddActiveSession(PomodoroSessionType type)
     {
-        var session = PomodoroSession.Create(type, 25, UserId.New());
+        var session = PomodoroSession.Create(type, 25, FakeCurrentUserService.TestUserId);
         session.Start(DateTime.UtcNow);
         _sessionRepository.Sessions.Add(session);
         return session;

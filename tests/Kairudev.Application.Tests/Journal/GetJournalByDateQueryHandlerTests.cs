@@ -9,7 +9,7 @@ namespace Kairudev.Application.Tests.Journal;
 
 public sealed class GetJournalByDateQueryHandlerTests
 {
-    private static readonly UserId OwnerId = UserId.New();
+    private static readonly UserId OwnerId = FakeCurrentUserService.TestUserId;
 
     private readonly FakeJournalEntryRepository _journalRepo = new();
     private readonly FakePomodoroSessionRepository _sessionRepo = new();
