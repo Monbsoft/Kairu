@@ -7,7 +7,9 @@
 
 ## Résumé état actuel
 
-**Itération en cours : #17 — BC Sprint libre (chronomètre à durée variable)** ✅ COMPLÉTÉE
+**Itération en cours : #18 — Éditeur Markdown pour les descriptions de tâches** 🚧 EN COURS
+
+**Dernière itération complétée : #17 — BC Sprint libre (chronomètre à durée variable)** ✅ COMPLÉTÉE
 
 **Dernière itération : #16 — Déploiement Azure (Bicep + CLI)** (2026-03-16) ✅ COMPLÉTÉE
 
@@ -55,7 +57,7 @@
 - ✅ Application en production : https://kairudev-prod.azurewebsites.net
 - ✅ Redéploiement : `powershell -ExecutionPolicy Bypass -File .\infra\deploy-linux.ps1 -Environment prod`
 
-**Tests :** 194 au total ✅ (111 Domain + 83 Application + 0 Infrastructure Sprint — migration EF intégrée)
+**Tests :** 194 au total ✅ (111 Domain + 83 Application + 0 Infrastructure Sprint — migration EF intégrée) — *sera mis à jour après itération #18*
 ⚠️ **Dette technique** : Tests d'intégration (`Kairudev.IntegrationTests`) non maintenus — step definitions obsolètes vs domain refactorisé
 
 **Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite (local) + **Azure SQL (prod)**
@@ -92,6 +94,7 @@
 | ~~#15b~~ | ~~Auth client Web + MAUI — Login.razor, JwtAuthenticationStateProvider, Landing page, Dashboard~~ | ~~✅ Livré~~ | ~~2026-03-09~~ |
 | ~~#16~~ | ~~Déploiement Azure — Bicep (subscription scope), CLI, ZIP cross-platform, deploy-linux.ps1, prod en direct~~ | ~~✅ Livré~~ | ~~2026-03-16~~ |
 | ~~#17~~ | ~~BC Sprint libre — chronomètre count-up, durée variable, lien tâche, journal auto~~ | ~~✅ Livré~~ | ~~2026-03-18~~ |
+| #18 | Éditeur Markdown — descriptions de tâches, Markdig, onglets Éditer/Prévisualiser, migration 1000→5000 chars | 🚧 En cours | 2026-03-18 |
 
 ---
 

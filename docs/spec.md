@@ -177,7 +177,7 @@ classDiagram
 
     class TaskDescription {
         +string Value
-        +MaxLength = 1000
+        +MaxLength = 5000
         +Create(value) Result~TaskDescription?~
     }
 
@@ -510,9 +510,64 @@ sequenceDiagram
 - [x] La description peut être ajoutée, modifiée ou supprimée (null)
 - [x] Titre vide → `400 Bad Request`
 - [x] Titre > 200 caractères → `400 Bad Request`
-- [x] Description > 1000 caractères → `400 Bad Request`
+- [x] Description > 5000 caractères → `400 Bad Request` *(limite portée de 1000 → 5000, itération #18)*
 - [x] Tâche inexistante → `404 Not Found`
 - [x] Modification persistée et reflétée dans `ListTasks`
+
+---
+
+### UC-T-13 — Éditeur Markdown pour la description d'une tâche
+
+**Acteur principal :** Développeur
+**Parties prenantes :** —
+**Préconditions :** la tâche existe ; l'utilisateur a ouvert le panneau de détail de la tâche
+**Postconditions (succès) :** la description Markdown est persistée ; le rendu HTML est affiché dans le panneau de détail
+
+**Scénario nominal :**
+1. Le développeur clique sur une tâche dans la liste.
+2. Le système ouvre le panneau de détail et affiche :
+   - Le titre de la tâche (texte brut)
+   - La description rendue en HTML via Markdig (ou un placeholder *"Aucune description"* si vide)
+3. Le développeur clique sur **"Modifier"**.
+4. Le système affiche l'éditeur Markdown en mode onglet `Éditer` actif, avec la description brute (Markdown source).
+5. Le développeur saisit ou modifie le contenu Markdown.
+6. Le développeur clique sur l'onglet `Prévisualiser`.
+7. Le système rend le Markdown en HTML via Markdig et l'affiche dans le panneau de prévisualisation.
+8. Le développeur clique sur **"Enregistrer"**.
+9. Le système valide la description (≤ 5 000 caractères, optionnelle).
+10. Le système persiste la description mise à jour.
+11. Le système ferme l'éditeur et affiche le panneau de détail avec le rendu HTML mis à jour.
+
+**Scénarios alternatifs :**
+- **A1 — Description vide :** le développeur efface tout le contenu → description sauvegardée `null` ; panneau affiche *"Aucune description"*
+- **A2 — Annulation :** clic sur "Annuler" → aucune modification, retour au panneau de détail
+- **A3 — Bascule répétée :** le développeur peut alterner librement entre `Éditer` et `Prévisualiser` sans perdre le contenu
+
+**Scénarios d'exception :**
+- **E1 — Description > 5 000 caractères :** bouton "Enregistrer" désactivé ; compteur en rouge
+- **E2 — Tâche supprimée entre-temps :** `404 Not Found` → message d'erreur, panneau fermé
+- **E3 — Erreur réseau :** message d'erreur non bloquant, éditeur reste ouvert
+
+**Contraintes techniques :**
+
+| Élément | Décision |
+|---|---|
+| Librairie rendu | **Markdig** (NuGet, pure C#, sans JS interop) |
+| Extensions activées | `UseAdvancedExtensions()` — tables, strikethrough, code blocks |
+| Affichage rendu Blazor | `@((MarkupString)html)` |
+| Limite description | Étendue de 1 000 → **5 000 caractères** (migration EF Core requise) |
+| Sécurité | Markdig sanitise le HTML par défaut — pas d'injection XSS |
+
+**Critères d'acceptance :**
+- [ ] Le panneau de détail affiche la description rendue en HTML (gras, italique, listes, blocs de code)
+- [ ] Si la description est vide → affiche *"Aucune description"*
+- [ ] L'éditeur s'ouvre en onglet `Éditer` avec le Markdown source
+- [ ] L'onglet `Prévisualiser` rend le Markdown via Markdig
+- [ ] Compteur `X / 5 000 caractères` visible sous l'éditeur
+- [ ] Dépassement → bouton "Enregistrer" désactivé, compteur en rouge
+- [ ] "Annuler" ne modifie pas la description
+- [ ] Description `null` si effacée complètement
+- [ ] Aucune régression sur UC-05 (titre, statut)
 
 ---
 
@@ -1268,6 +1323,15 @@ sequenceDiagram
   - **Avantage** : JWT jamais exposé dans les logs serveur ou proxy ; expérience utilisateur cohérente (landing → login → dashboard).
   - **Contrainte** : le fragment est visible dans l'URL le temps d'un rendu Blazor ; `Login.razor` doit nettoyer la barre d'adresse après extraction.
   - **Routing** : `AuthorizeRouteView` redirige vers `/login` (configurable via `<NotAuthorized>`) pour toutes les pages `[Authorize]`.
+
+### ADR-013 — Markdig pour le rendu Markdown des descriptions de tâches
+- **Contexte :** UC-T-13 (itération #18) introduit un éditeur Markdown pour les descriptions de tâches. Le rendu côté client (Blazor WASM) doit transformer le Markdown en HTML sans dépendance JS.
+- **Décision :** Utiliser **Markdig** (NuGet `Markdig`) avec `UseAdvancedExtensions()`. Affichage via `@((MarkupString)html)` dans Blazor.
+- **Conséquences :**
+  - Aucun interop JS requis — Markdig est 100% C#, compatible WASM.
+  - Sanitisation HTML incluse par défaut — pas d'injection XSS.
+  - Ajout ~500 KB au bundle WASM (à surveiller).
+  - `TaskDescription.MaxLength` porté de 1 000 → 5 000 caractères + migration EF Core.
 
 ---
 
