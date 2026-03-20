@@ -1,10 +1,10 @@
 @page "/tasks"
 @attribute [Authorize]
 @using Kairudev.Web.Services
-@using Markdig
 @inject TaskApiClient Api
 @inject TicketApiClient TicketApi
 @inject NavigationManager Nav
+@inject MarkdownService MarkdownSvc
 
 <h2>Tâches du jour</h2>
 
@@ -54,7 +54,7 @@ else
                         </div>
                         @if (!string.IsNullOrWhiteSpace(task.Description))
                         {
-                            <div class="text-muted small mt-1">@((MarkupString)RenderMarkdown(task.Description))</div>
+                            <div class="text-muted small mt-1">@((MarkupString)MarkdownSvc.Render(task.Description))</div>
                         }
                         @if (linkingTaskId == task.Id)
                         {
@@ -70,7 +70,7 @@ else
                         }
                     </div>
                     <div class="d-flex gap-2 align-items-center ms-3">
-                        <span class="badge @StatusBadgeClass(task.Status)">@task.Status</span>
+                        <span class="badge @MarkdownService.StatusBadgeClass(task.Status)">@task.Status</span>
                         @if (task.Status != "Done")
                         {
                             <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToEdit(task.Id)" title="Modifier">&#x270E;</button>
@@ -93,12 +93,6 @@ else
 }
 
 @code {
-    private static readonly MarkdownPipeline _pipeline =
-        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-
-    private string RenderMarkdown(string? md) =>
-        string.IsNullOrWhiteSpace(md) ? string.Empty : Markdown.ToHtml(md, _pipeline);
-
     private List<TaskDto>? tasks;
     private string newTitle = string.Empty;
     private string newDescription = string.Empty;
@@ -193,10 +187,4 @@ else
         linkJiraKeyInput = string.Empty;
     }
 
-    private static string StatusBadgeClass(string status) => status switch
-    {
-        "Done" => "bg-success",
-        "InProgress" => "bg-warning text-dark",
-        _ => "bg-secondary"
-    };
 }

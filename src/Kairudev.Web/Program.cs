@@ -37,5 +37,6 @@ builder.Services.AddScoped<SettingsApiClient>();
 builder.Services.AddScoped<TicketApiClient>();
 builder.Services.AddScoped<SprintApiClient>();
 builder.Services.AddScoped<ISoundService, SoundService>();
+builder.Services.AddSingleton<MarkdownService>();
 
 await builder.Build().RunAsync();

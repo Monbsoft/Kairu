@@ -1,10 +1,10 @@
 @page "/tasks/{Id:guid}/edit"
 @using Kairudev.Maui.Services
 @using Kairudev.Maui.Auth
-@using Markdig
 @inject TaskApiClient Api
 @inject MauiAuthService AuthService
 @inject NavigationManager Nav
+@inject MarkdownService MarkdownSvc
 
 @if (notFound)
 {
@@ -59,7 +59,7 @@ else
                 }
                 else
                 {
-                    @((MarkupString)RenderMarkdown(editDescMd))
+                    @((MarkupString)MarkdownSvc.Render(editDescMd))
                 }
             </div>
         }
@@ -78,9 +78,6 @@ else
 
     private const int DescriptionMaxLength = 5000;
 
-    private static readonly MarkdownPipeline _pipeline =
-        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-
     private TaskDto? task;
     private bool notFound;
     private string? errorMessage;
@@ -98,6 +95,11 @@ else
         }
         task = await Api.GetByIdAsync(Id);
         notFound = task is null;
+        if (task is not null && task.Status == "Done")
+        {
+            Nav.NavigateTo($"/tasks/{Id}");
+            return;
+        }
         if (task is not null)
         {
             editTitle = task.Title;
@@ -120,9 +122,6 @@ else
             errorMessage = "Erreur lors de la modification.";
         }
     }
-
-    private string RenderMarkdown(string? md) =>
-        string.IsNullOrWhiteSpace(md) ? string.Empty : Markdown.ToHtml(md, _pipeline);
 
     private void GoBack() => Nav.NavigateTo($"/tasks/{Id}");
 }

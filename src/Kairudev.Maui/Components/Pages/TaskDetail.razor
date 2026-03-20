@@ -1,10 +1,10 @@
 @page "/tasks/{Id:guid}"
 @using Kairudev.Maui.Services
 @using Kairudev.Maui.Auth
-@using Markdig
 @inject TaskApiClient Api
 @inject MauiAuthService AuthService
 @inject NavigationManager Nav
+@inject MarkdownService MarkdownSvc
 
 @if (notFound)
 {
@@ -19,7 +19,7 @@ else
 {
     <div class="d-flex align-items-center gap-3 mb-3">
         <h2 class="mb-0">@task.Title</h2>
-        <span class="badge @StatusBadgeClass(task.Status)">@task.Status</span>
+        <span class="badge @MarkdownService.StatusBadgeClass(task.Status)">@task.Status</span>
         @if (!string.IsNullOrWhiteSpace(task.JiraTicketKey))
         {
             <span class="badge bg-primary">@task.JiraTicketKey</span>
@@ -33,7 +33,7 @@ else
         }
         else
         {
-            @((MarkupString)RenderMarkdown(task.Description))
+            @((MarkupString)MarkdownSvc.Render(task.Description))
         }
     </div>
 
@@ -49,9 +49,6 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private static readonly MarkdownPipeline _pipeline =
-        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-
     private TaskDto? task;
     private bool notFound;
 
@@ -66,17 +63,7 @@ else
         notFound = task is null;
     }
 
-    private string RenderMarkdown(string? md) =>
-        string.IsNullOrWhiteSpace(md) ? string.Empty : Markdown.ToHtml(md, _pipeline);
-
     private void GoToEdit() => Nav.NavigateTo($"/tasks/{Id}/edit");
 
     private void GoBack() => Nav.NavigateTo("/tasks");
-
-    private static string StatusBadgeClass(string status) => status switch
-    {
-        "Done" => "bg-success",
-        "InProgress" => "bg-warning text-dark",
-        _ => "bg-secondary"
-    };
 }
