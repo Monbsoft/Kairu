@@ -115,7 +115,7 @@ else
         var updated = await Api.UpdateAsync(Id, editTitle.Trim(), description);
         if (updated is not null)
         {
-            Nav.NavigateTo($"/tasks/{Id}");
+            Nav.NavigateTo("/tasks");
         }
         else
         {
@@ -123,5 +123,5 @@ else
         }
     }
 
-    private void GoBack() => Nav.NavigateTo($"/tasks/{Id}");
+    private void GoBack() => Nav.NavigateTo("/tasks");
 }

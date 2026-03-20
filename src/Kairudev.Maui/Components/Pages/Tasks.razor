@@ -109,7 +109,8 @@ else
             Nav.NavigateTo("/login", forceLoad: false);
             return;
         }
-        tasks = await Api.GetAllAsync();
+        var all = await Api.GetAllAsync();
+        tasks = [.. all.OrderByDescending(t => t.CreatedAt)];
     }
 
     private void NavigateToDetail(Guid id) => Nav.NavigateTo($"/tasks/{id}");
@@ -138,7 +139,10 @@ else
     {
         errorMessage = null;
         if (await Api.CompleteAsync(id))
-            tasks = await Api.GetAllAsync();
+        {
+            var all = await Api.GetAllAsync();
+            tasks = [.. all.OrderByDescending(t => t.CreatedAt)];
+        }
         else
             errorMessage = "Erreur lors de la complétion.";
     }
@@ -171,7 +175,8 @@ else
 
         if (await TicketApi.LinkAsync(taskId, linkJiraKeyInput.Trim()))
         {
-            tasks = await Api.GetAllAsync();
+            var all = await Api.GetAllAsync();
+            tasks = [.. all.OrderByDescending(t => t.CreatedAt)];
             CancelJiraLink();
         }
         else
@@ -184,7 +189,10 @@ else
     {
         errorMessage = null;
         if (await TicketApi.UnlinkAsync(taskId))
-            tasks = await Api.GetAllAsync();
+        {
+            var all = await Api.GetAllAsync();
+            tasks = [.. all.OrderByDescending(t => t.CreatedAt)];
+        }
         else
             errorMessage = "Erreur lors de la suppression du lien Jira.";
     }
