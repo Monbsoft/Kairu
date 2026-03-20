@@ -1,9 +1,9 @@
 @page "/tasks"
 @attribute [Authorize]
 @using Kairudev.Web.Services
-@using Markdig
 @inject TaskApiClient Api
 @inject TicketApiClient TicketApi
+@inject NavigationManager Nav
 
 <h2>Tâches du jour</h2>
 
@@ -45,7 +45,7 @@ else
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
                         <div class="@(task.Status == "Done" ? "text-decoration-line-through text-muted" : "")">
-                            <button class="btn btn-link p-0 text-start fw-bold" @onclick="() => OpenDetail(task)">@task.Title</button>
+                            <button class="btn btn-link p-0 text-start fw-bold" @onclick="() => NavigateToDetail(task.Id)">@task.Title</button>
                             @if (!string.IsNullOrWhiteSpace(task.JiraTicketKey))
                             {
                                 <span class="badge bg-primary ms-2">@task.JiraTicketKey</span>
@@ -72,7 +72,7 @@ else
                         <span class="badge @StatusBadgeClass(task.Status)">@task.Status</span>
                         @if (task.Status != "Done")
                         {
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => { OpenDetail(task); StartMarkdownEdit(); }" title="Modifier">&#x270E;</button>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToEdit(task.Id)" title="Modifier">&#x270E;</button>
                             <button class="btn btn-sm btn-success" @onclick="() => CompleteTask(task.Id)" title="Compléter">&#x2713;</button>
                         }
                         @if (string.IsNullOrWhiteSpace(task.JiraTicketKey))
@@ -91,159 +91,21 @@ else
     </ul>
 }
 
-@* Modale Bootstrap sans JS *@
-<div class="modal @(detailTask != null ? "show d-block" : "")" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            @if (detailTask != null && !isEditing)
-            {
-                <div class="modal-header">
-                    <h5 class="modal-title">@detailTask.Title</h5>
-                    <button type="button" class="btn-close" @onclick="CloseDetail"></button>
-                </div>
-                <div class="modal-body">
-                    @if (string.IsNullOrWhiteSpace(detailTask.Description))
-                    {
-                        <p class="text-muted fst-italic">Aucune description.</p>
-                    }
-                    else
-                    {
-                        @((MarkupString)RenderMarkdown(detailTask.Description))
-                    }
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" @onclick="StartMarkdownEdit">Modifier</button>
-                    <button class="btn btn-secondary" @onclick="CloseDetail">Fermer</button>
-                </div>
-            }
-            @if (detailTask != null && isEditing)
-            {
-                <div class="modal-header">
-                    <h5 class="modal-title">Modifier la tâche</h5>
-                    <button type="button" class="btn-close" @onclick="CloseDetail"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Titre</label>
-                        <input class="form-control" @bind="editTitle" @bind:event="oninput" placeholder="Titre…" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Description</label>
-                        <ul class="nav nav-tabs mb-2">
-                            <li class="nav-item">
-                                <button class="nav-link @(editTab == "edit" ? "active" : "")" @onclick='() => editTab = "edit"'>Éditer</button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link @(editTab == "preview" ? "active" : "")" @onclick='() => editTab = "preview"'>Prévisualiser</button>
-                            </li>
-                        </ul>
-                        @if (editTab == "edit")
-                        {
-                            <textarea class="form-control font-monospace"
-                                      rows="10"
-                                      @bind="editDescMd"
-                                      @bind:event="oninput"
-                                      placeholder="Description en Markdown…"></textarea>
-                            <div class="mt-1 small @(editDescMd.Length > DescriptionMaxLength ? "text-danger fw-bold" : "text-muted")">
-                                @editDescMd.Length / @DescriptionMaxLength
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="border rounded p-3 bg-light" style="min-height: 200px;">
-                                @if (string.IsNullOrWhiteSpace(editDescMd))
-                                {
-                                    <p class="text-muted fst-italic">Aucun contenu à prévisualiser.</p>
-                                }
-                                else
-                                {
-                                    @((MarkupString)RenderMarkdown(editDescMd))
-                                }
-                            </div>
-                        }
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary"
-                            disabled="@(editDescMd.Length > DescriptionMaxLength || string.IsNullOrWhiteSpace(editTitle))"
-                            @onclick="SaveMarkdownEdit">Enregistrer</button>
-                    <button class="btn btn-secondary" @onclick="() => { isEditing = false; }">Annuler</button>
-                </div>
-            }
-        </div>
-    </div>
-</div>
-@if (detailTask != null)
-{
-    <div class="modal-backdrop fade show"></div>
-}
-
 @code {
-    private const int DescriptionMaxLength = 5000;
-
-    private static readonly MarkdownPipeline _pipeline =
-        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-
     private List<TaskDto>? tasks;
     private string newTitle = string.Empty;
     private string newDescription = string.Empty;
     private string? errorMessage;
 
-    private TaskDto? detailTask;
-    private bool isEditing;
-    private string editTab = "edit";
-    private string editTitle = string.Empty;
-    private string editDescMd = string.Empty;
-
     private Guid? linkingTaskId;
     private string linkJiraKeyInput = string.Empty;
-
-    private string RenderMarkdown(string? md) =>
-        string.IsNullOrWhiteSpace(md) ? string.Empty : Markdown.ToHtml(md, _pipeline);
 
     protected override async Task OnInitializedAsync() =>
         tasks = await Api.GetAllAsync();
 
-    private void OpenDetail(TaskDto task)
-    {
-        detailTask = task;
-        isEditing = false;
-        editTab = "edit";
-    }
+    private void NavigateToDetail(Guid id) => Nav.NavigateTo($"/tasks/{id}");
 
-    private void CloseDetail()
-    {
-        detailTask = null;
-        isEditing = false;
-    }
-
-    private void StartMarkdownEdit()
-    {
-        if (detailTask is null) return;
-        editTitle = detailTask.Title;
-        editDescMd = detailTask.Description ?? string.Empty;
-        isEditing = true;
-        editTab = "edit";
-    }
-
-    private async Task SaveMarkdownEdit()
-    {
-        if (detailTask is null || editDescMd.Length > DescriptionMaxLength) return;
-        errorMessage = null;
-        var description = string.IsNullOrWhiteSpace(editDescMd) ? null : editDescMd.Trim();
-        var updated = await Api.UpdateAsync(detailTask.Id, editTitle.Trim(), description);
-        if (updated is not null)
-        {
-            var index = tasks!.FindIndex(t => t.Id == detailTask.Id);
-            if (index >= 0) tasks[index] = updated;
-            detailTask = updated;
-            isEditing = false;
-        }
-        else
-        {
-            errorMessage = "Erreur lors de la modification.";
-        }
-    }
+    private void NavigateToEdit(Guid id) => Nav.NavigateTo($"/tasks/{id}/edit");
 
     private async Task AddTask()
     {
@@ -276,14 +138,9 @@ else
     {
         errorMessage = null;
         if (await Api.DeleteAsync(id))
-        {
             tasks!.RemoveAll(t => t.Id == id);
-            if (detailTask?.Id == id) CloseDetail();
-        }
         else
-        {
             errorMessage = "Erreur lors de la suppression.";
-        }
     }
 
     private async Task OnKeyDown(KeyboardEventArgs e)

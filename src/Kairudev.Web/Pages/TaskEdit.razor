@@ -1,0 +1,123 @@
+@page "/tasks/{Id:guid}/edit"
+@attribute [Authorize]
+@using Kairudev.Web.Services
+@using Markdig
+@inject TaskApiClient Api
+@inject NavigationManager Nav
+
+@if (notFound)
+{
+    <div class="alert alert-warning">Tâche introuvable.</div>
+    <button class="btn btn-secondary" @onclick="GoBack">Retour</button>
+}
+else if (task is null)
+{
+    <p>Chargement…</p>
+}
+else
+{
+    <h2>Modifier la tâche</h2>
+
+    @if (errorMessage is not null)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Titre</label>
+        <input class="form-control" @bind="editTitle" @bind:event="oninput" placeholder="Titre…" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Description</label>
+        <ul class="nav nav-tabs mb-2">
+            <li class="nav-item">
+                <button class="nav-link @(editTab == "edit" ? "active" : "")" @onclick='() => editTab = "edit"'>Éditer</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(editTab == "preview" ? "active" : "")" @onclick='() => editTab = "preview"'>Prévisualiser</button>
+            </li>
+        </ul>
+        @if (editTab == "edit")
+        {
+            <textarea class="form-control font-monospace"
+                      rows="12"
+                      @bind="editDescMd"
+                      @bind:event="oninput"
+                      placeholder="Description en Markdown…"></textarea>
+            <div class="mt-1 small @(editDescMd.Length > DescriptionMaxLength ? "text-danger fw-bold" : "text-muted")">
+                @editDescMd.Length / @DescriptionMaxLength
+            </div>
+        }
+        else
+        {
+            <div class="border rounded p-3 bg-light" style="min-height: 200px;">
+                @if (string.IsNullOrWhiteSpace(editDescMd))
+                {
+                    <p class="text-muted fst-italic">Aucun contenu à prévisualiser.</p>
+                }
+                else
+                {
+                    @((MarkupString)RenderMarkdown(editDescMd))
+                }
+            </div>
+        }
+    </div>
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary"
+                disabled="@(editDescMd.Length > DescriptionMaxLength || string.IsNullOrWhiteSpace(editTitle))"
+                @onclick="SaveEdit">Enregistrer</button>
+        <button class="btn btn-secondary" @onclick="GoBack">Annuler</button>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private const int DescriptionMaxLength = 5000;
+
+    private static readonly MarkdownPipeline _pipeline =
+        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+    private TaskDto? task;
+    private bool notFound;
+    private string? errorMessage;
+
+    private string editTitle = string.Empty;
+    private string editDescMd = string.Empty;
+    private string editTab = "edit";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var all = await Api.GetAllAsync();
+        task = all.FirstOrDefault(t => t.Id == Id);
+        notFound = task is null;
+        if (task is not null)
+        {
+            editTitle = task.Title;
+            editDescMd = task.Description ?? string.Empty;
+        }
+    }
+
+    private async Task SaveEdit()
+    {
+        if (task is null || editDescMd.Length > DescriptionMaxLength) return;
+        errorMessage = null;
+        var description = string.IsNullOrWhiteSpace(editDescMd) ? null : editDescMd.Trim();
+        var updated = await Api.UpdateAsync(Id, editTitle.Trim(), description);
+        if (updated is not null)
+        {
+            Nav.NavigateTo($"/tasks/{Id}");
+        }
+        else
+        {
+            errorMessage = "Erreur lors de la modification.";
+        }
+    }
+
+    private string RenderMarkdown(string? md) =>
+        string.IsNullOrWhiteSpace(md) ? string.Empty : Markdown.ToHtml(md, _pipeline);
+
+    private void GoBack() => Nav.NavigateTo($"/tasks/{Id}");
+}
