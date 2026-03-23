@@ -53,14 +53,20 @@
                                 <span class="nb-label">@GetEventLabel(entry)</span>
                             </div>
 
-                            @if (entry.LinkedTaskTitles.Count > 0)
+                            @if (entry.LinkedTasks.Count > 0)
                             {
                                 <div class="nb-tasks">
                                     <span class="nb-tasks-header">Tâches travaillées</span>
                                     <ul class="nb-tasks-list">
-                                        @foreach (var title in entry.LinkedTaskTitles)
+                                        @foreach (var task in entry.LinkedTasks)
                                         {
-                                            <li>@title</li>
+                                            <li>
+                                                <span>@task.Title</span>
+                                                @foreach (var tag in task.Tags)
+                                                {
+                                                    <span class="badge @TagColorClass(tag)">@tag</span>
+                                                }
+                                            </li>
                                         }
                                     </ul>
                                 </div>
@@ -369,7 +375,6 @@
         font-size: 0.75rem;
     }
 
-    /* ── Commentaires ────────────────────────────────────── */
     .nb-comment {
         margin: 0.3rem 0 0 1.4rem;
     }
@@ -534,6 +539,23 @@
         "TaskCompleted"     => "Tâche complétée",
         _                   => entry.EventType
     };
+
+    private static readonly string[] TagPalette =
+    [
+        "bg-primary",
+        "bg-success",
+        "bg-danger",
+        "bg-warning text-dark",
+        "bg-info text-dark",
+        "bg-secondary",
+        "text-bg-purple",
+        "text-bg-orange",
+        "text-bg-teal",
+        "text-bg-pink"
+    ];
+
+    private static string TagColorClass(string tag) =>
+        TagPalette[Math.Abs(tag.ToLowerInvariant().GetHashCode()) % TagPalette.Length];
 
     // ── Actions commentaires ──────────────────────────────
 

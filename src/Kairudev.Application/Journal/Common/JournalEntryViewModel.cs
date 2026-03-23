@@ -4,6 +4,8 @@ namespace Kairudev.Application.Journal.Common;
 
 public sealed record JournalCommentViewModel(Guid Id, string Text);
 
+public sealed record JournalLinkedTaskViewModel(string Title, IReadOnlyList<string> Tags);
+
 public sealed record JournalEntryViewModel(
     Guid Id,
     DateTime OccurredAt,
@@ -11,14 +13,19 @@ public sealed record JournalEntryViewModel(
     Guid ResourceId,
     int? Sequence,
     IReadOnlyList<string> LinkedTaskTitles,
-    IReadOnlyList<JournalCommentViewModel> Comments)
+    IReadOnlyList<JournalCommentViewModel> Comments,
+    IReadOnlyList<JournalLinkedTaskViewModel> LinkedTasks)
 {
-    public static JournalEntryViewModel From(JournalEntry entry, IReadOnlyList<string>? taskTitles = null) => new(
+    public static JournalEntryViewModel From(
+        JournalEntry entry,
+        IReadOnlyList<string>? taskTitles = null,
+        IReadOnlyList<JournalLinkedTaskViewModel>? linkedTasks = null) => new(
         entry.Id.Value,
         entry.OccurredAt,
         entry.EventType.ToString(),
         entry.ResourceId,
         entry.Sequence,
         taskTitles ?? [],
-        entry.Comments.Select(c => new JournalCommentViewModel(c.Id.Value, c.Text)).ToList().AsReadOnly());
+        entry.Comments.Select(c => new JournalCommentViewModel(c.Id.Value, c.Text)).ToList().AsReadOnly(),
+        linkedTasks ?? []);
 }

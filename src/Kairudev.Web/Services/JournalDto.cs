@@ -1,5 +1,7 @@
 namespace Kairudev.Web.Services;
 
+public sealed record JournalLinkedTaskDto(string Title, List<string> Tags);
+
 public sealed record JournalEntryDto(
     Guid Id,
     DateTime OccurredAt,
@@ -7,7 +9,8 @@ public sealed record JournalEntryDto(
     Guid ResourceId,
     int? Sequence,
     List<string> LinkedTaskTitles,
-    List<JournalCommentDto> Comments);
+    List<JournalCommentDto> Comments,
+    List<JournalLinkedTaskDto> LinkedTasks);
 
 public sealed record JournalCommentDto(
     Guid Id,

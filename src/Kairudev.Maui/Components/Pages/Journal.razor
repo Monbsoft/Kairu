@@ -42,12 +42,18 @@ else
                             <strong>@GetEventLabel(entry)</strong>
                         </div>
 
-                        @if (entry.LinkedTaskTitles.Count > 0)
+                        @if (entry.LinkedTasks.Count > 0)
                         {
                             <ul class="list-unstyled small text-muted ms-2 mb-1">
-                                @foreach (var title in entry.LinkedTaskTitles)
+                                @foreach (var task in entry.LinkedTasks)
                                 {
-                                    <li>→ @title</li>
+                                    <li class="d-flex align-items-center gap-1 flex-wrap">
+                                        <span>→ @task.Title</span>
+                                        @foreach (var tag in task.Tags)
+                                        {
+                                            <span class="badge @TagColorClass(tag)">@tag</span>
+                                        }
+                                    </li>
                                 }
                             </ul>
                         }
@@ -270,4 +276,21 @@ else
         "TaskCompleted"     => "Tâche complétée",
         _                   => entry.EventType
     };
+
+    private static readonly string[] TagPalette =
+    [
+        "bg-primary",
+        "bg-success",
+        "bg-danger",
+        "bg-warning text-dark",
+        "bg-info text-dark",
+        "bg-secondary",
+        "text-bg-purple",
+        "text-bg-orange",
+        "text-bg-teal",
+        "text-bg-pink"
+    ];
+
+    private static string TagColorClass(string tag) =>
+        TagPalette[Math.Abs(tag.ToLowerInvariant().GetHashCode()) % TagPalette.Length];
 }
