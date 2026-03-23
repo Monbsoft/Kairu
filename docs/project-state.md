@@ -7,11 +7,11 @@
 
 ## Résumé état actuel
 
-**Dernière itération complétée : #18 — Éditeur Markdown + navigation pages dédiées** ✅ COMPLÉTÉE (2026-03-20)
+**Dernière itération complétée : #19 — Retrait Jira (pages + configuration UI)** ✅ COMPLÉTÉE (2026-03-23)
 
-**Itération précédente : #17 — BC Sprint libre (chronomètre à durée variable)** ✅ COMPLÉTÉE
+**Itération précédente : #18 — Éditeur Markdown + navigation pages dédiées** ✅ COMPLÉTÉE (2026-03-20)
 
-**Itération : #16 — Déploiement Azure (Bicep + CLI)** (2026-03-16) ✅ COMPLÉTÉE
+**Itération : #17 — BC Sprint libre (chronomètre à durée variable)** ✅ COMPLÉTÉE
 
 **Bounded Contexts opérationnels :**
 - **Identity** : `User`, `UserId`, `IUserRepository`, `GetOrCreateUserCommandHandler` ✅
@@ -19,7 +19,7 @@
 - **Pomodoro** : 10 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
 - **Journal** : 6 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
 - **Settings** : 4 Commands/Queries — **Architecture CQRS** ✅ (filtrés par `UserId`)
-- **Tickets** : 1 Query — **Architecture CQRS** ✅
+- **Tickets** : 1 Query — **Architecture CQRS** ✅ (**désactivé côté UI depuis #19**)
 - **Sprint** : 2 Commands/Queries — **Architecture CQRS** ✅ (timer client-side, journal automatique)
 
 **Architecture Application Layer :**
@@ -48,10 +48,11 @@
 - ✅ Table `Users` créée en base (GitHubId unique, Login, DisplayName, Email?)
 
 **UI (Blazor WASM) :**
-- ✅ **Landing page** (`/`) : hero + 4 feature cards, bouton GitHub login, `[AllowAnonymous]`
+- ✅ **Landing page** (`/`) : hero + 3 feature cards, bouton GitHub login, `[AllowAnonymous]`
 - ✅ **Dashboard** (`/dashboard`) : salutation, stats (tâches, Pomodoro, journal), accès rapides, `[Authorize]`
 - ✅ **NavMenu** : icône dashboard + bouton déconnexion SVG (logout → landing)
 - ✅ **Redirection intelligente** : `/` → `/dashboard` si authentifié, `/login` → `/dashboard` après login
+- ✅ **Jira désactivé côté UI/config** : pages Tickets supprimées, menu Tickets retiré, configuration Jira retirée de Settings
 
 **Déploiement :**
 - ✅ Application en production : https://kairudev-prod.azurewebsites.net
@@ -95,10 +96,88 @@
 | ~~#16~~ | ~~Déploiement Azure — Bicep (subscription scope), CLI, ZIP cross-platform, deploy-linux.ps1, prod en direct~~ | ~~✅ Livré~~ | ~~2026-03-16~~ |
 | ~~#17~~ | ~~BC Sprint libre — chronomètre count-up, durée variable, lien tâche, journal auto~~ | ~~✅ Livré~~ | ~~2026-03-18~~ |
 | ~~#18~~ | ~~Éditeur Markdown + navigation pages dédiées — Markdig, onglets Éditer/Prévisualiser, pages TaskDetail/TaskEdit, suppression modale~~ | ~~✅ Livré~~ | ~~2026-03-20~~ |
+| ~~#19~~ | ~~Retrait Jira (pages + configuration UI) — suppression pages Tickets Web/MAUI, retrait menu, retrait config Jira dans Settings, retrait endpoint API `/api/settings/jira`~~ | ~~✅ Livré~~ | ~~2026-03-23~~ |
 
 ---
 
 ## Dernière itération livrée
+
+**#19 — Retrait Jira (pages + configuration UI)** — Livré le 2026-03-23
+
+### Ce qui a été livré
+
+**Domain** ✅
+- Aucune modification
+
+**Application (CQRS)** ✅
+- Aucune modification
+
+**Infrastructure** ✅
+- Aucune modification
+
+**API** ✅
+- Suppression de l'endpoint `PUT /api/settings/jira`
+
+**UI Web (Blazor WASM)** ✅
+- Suppression de la page `/tickets`
+- Retrait du menu Tickets dans `NavMenu.razor`
+- Retrait de la configuration Jira dans `Settings.razor`
+
+**UI MAUI (Blazor Hybrid)** ✅
+- Même logique que pour Web : retrait de la page Tickets et du menu
+
+**Tests** ✅ (aucun test impacté)
+
+### Impact
+- Les fonctionnalités liées à Jira ont été complètement retirées de l'application, tant côté UI que configuration.
+
+### Dette technique introduite
+- Aucune
+
+---
+
+## Itération précédente
+
+**#18 — Éditeur Markdown + navigation pages dédiées** — Livré le 2026-03-20
+
+### Ce qui a été livré
+
+**Domain** ✅
+- Aucune modification
+
+**Application (CQRS)** ✅
+- Aucune modification
+
+**Infrastructure** ✅
+- Aucune modification
+
+**API** ✅
+- Aucune modification
+
+**UI Web (Blazor WASM)** ✅
+- `TaskDetail.razor` : affichage en lecture seule, section "Détails de la tâche" avec champs non modifiables
+- `TaskEdit.razor` : édition de tâche avec description, statut, dates, durée, responsables
+- Modale de suppression de tâche avec confirmation
+- `MarkdownEditor.razor` : éditeur Markdown avec toolbar (gras, italique, lien, image)
+
+**UI MAUI (Blazor Hybrid)** ✅
+- Même logique que pour Web : pages TaskDetail et TaskEdit, modale de suppression
+
+**Tests** ✅ (+7 tests, total 179)
+- `TaskDescriptionTests` : 3 tests (valide, trop long, correcte lors de la création de tâche)
+- `TaskEditValidationTests` : 4 tests (dates, durée, responsable, statut)
+
+### Impact
+- L'utilisateur peut maintenant visualiser et éditer les détails d'une tâche, y compris la description au format Markdown
+- Amélioration de l'UX avec des modales et une navigation claire entre détails et édition
+- Respect total du pattern CQRS
+
+### Dette technique introduite
+- Aucune
+
+---
+
+## Itération précédente
 
 **#17 — BC Sprint libre** — Livré le 2026-03-18
 
@@ -891,4 +970,3 @@ tests/
 docs/
 ├── spec.md
 └── project-state.md
-```

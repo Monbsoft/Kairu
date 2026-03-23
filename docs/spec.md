@@ -3,7 +3,22 @@
 ## Vision produit
 Application de gestion d'activité quotidienne pour développeurs.
 Elle centralise en un seul endroit tout ce dont un développeur a besoin pour rester focus et organisé :
-todo list de micro-tâches, journal de bord, intégration tickets, sessions Pomodoro.
+todo list de micro-tâches, journal de bord, sessions Pomodoro.
+
+### Itération #19 — Retrait Jira (pages + configuration UI)
+
+**Objectif :** désactiver Jira côté expérience utilisateur sans supprimer le BC Tickets côté backend/domain.
+
+**Périmètre :**
+- suppression des pages Tickets Web/MAUI ;
+- suppression de l'entrée Tickets dans les menus Web/MAUI ;
+- suppression de la configuration Jira dans Settings Web/MAUI ;
+- suppression de l'endpoint API `PUT /api/settings/jira` ;
+- retrait des actions de liaison Jira depuis les pages Tasks Web/MAUI.
+
+**Hors périmètre :**
+- suppression des composants Domain/Application/Infrastructure liés à Jira ;
+- migration de base de données.
 
 ---
 
@@ -1437,54 +1452,4 @@ classDiagram
 
 **Critères d'acceptance :**
 - [ ] Affiche nom, durée, outcome et tâche liée (si présente) pour chaque sprint
-
----
-
-## Bounded Context : Settings
-
-### UC-17 — Sauvegarder préférence de thème
-
-**Acteur principal :** Développeur  
-**Parties prenantes :** —  
-**Préconditions :** —  
-**Postconditions (succès) :** La préférence de thème est sauvegardée et le thème est appliqué.
-
-**Scénario nominal :**
-1. Le développeur accède aux paramètres.
-2. Le développeur sélectionne un thème (Clair / Sombre / Système).
-3. Le système valide la valeur (Light, Dark, System).
-4. Le système met à jour l'aggregate UserSettings.
-5. Le système persiste en base SQLite.
-6. Le système applique le thème immédiatement (via JSInterop).
-
-**Scénarios d'exception :**
-- **E1 :** Valeur invalide → erreur retournée à l'UI.
-
-**Critères d'acceptance :**
-- [x] La préférence est persistée en SQLite
-- [x] Le changement est appliqué immédiatement sans rechargement
-- [x] Synchronisation Web ↔ MAUI via API
-- [x] Détection de la préférence système (dark/light)
-
----
-
-### UC-18 — Consulter les paramètres utilisateur
-
-**Acteur principal :** Développeur  
-**Parties prenantes :** —  
-**Préconditions :** —  
-**Postconditions (succès) :** Les paramètres sont affichés.
-
-**Scénario nominal :**
-1. Le développeur accède à /settings.
-2. Le système récupère les UserSettings depuis SQLite.
-3. Le système retourne le ThemePreference.
-4. L'UI affiche la valeur actuelle dans le select.
-
-**Scénarios alternatifs :**
-- **A1 :** Aucun paramètre n'existe → crée des settings par défaut (System).
-
-**Critères d'acceptance :**
-- [x] Chargement des settings au démarrage de la page
-- [x] Création automatique si premier accès
 
