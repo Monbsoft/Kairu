@@ -45,7 +45,6 @@ public static class MauiProgram
 		builder.Services.AddScoped<PomodoroApiClient>();
 		builder.Services.AddScoped<JournalApiClient>();
 		builder.Services.AddScoped<SettingsApiClient>();
-		builder.Services.AddScoped<TicketApiClient>();
 		builder.Services.AddScoped<SprintApiClient>();
 		builder.Services.AddSingleton<MarkdownService>();
 

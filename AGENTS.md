@@ -418,6 +418,16 @@ Si le modèle change en cours d'itération, les diagrammes concernés sont mis �
 
 ---
 
+## Utilisation des sous-agents
+
+Avant de lancer un sous-agent (outil `Agent`), toujours annoncer explicitement à l'utilisateur :
+- **Quel agent** est lancé (ex : `Explore`, `dev`, `arch`, `pm`, `relecteur`)
+- **Pourquoi** (tâche déléguée en une ligne)
+
+Exemple : *"Je lance l'agent **Explore** pour inventorier les fichiers Jira dans le projet."*
+
+---
+
 ## Démarrage de chaque session
 
 1. Lis `docs/project-state.md` s'il existe — c'est la source de vérité sur l'état courant.

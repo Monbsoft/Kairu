@@ -1,4 +1,3 @@
-using Kairudev.Application.Settings.Commands.SaveJiraSettings;
 using Kairudev.Application.Settings.Commands.SaveRingtonePreference;
 using Kairudev.Application.Settings.Commands.SaveThemePreference;
 using Kairudev.Application.Settings.Queries.GetUserSettings;
@@ -54,16 +53,7 @@ public sealed class SettingsController : ControllerBase
 
         return NoContent();
     }
-
-    [HttpPut("jira")]
-    public async Task<IActionResult> SaveJiraSettings([FromBody] SaveJiraSettingsRequest request, CancellationToken ct)
-    {
-        var command = new SaveJiraSettingsCommand(request.JiraBaseUrl, request.JiraEmail, request.JiraApiToken);
-        var result = await _mediator.DispatchAsync<SaveJiraSettingsCommand, SaveJiraSettingsResult>(command, ct);
-        return result.IsSuccess ? NoContent() : BadRequest(new { error = result.Error });
-    }
 }
 
 public sealed record SaveThemePreferenceRequest(string ThemePreference);
 public sealed record SaveRingtonePreferenceRequest(string RingtonePreference);
-public sealed record SaveJiraSettingsRequest(string? JiraBaseUrl, string? JiraEmail, string? JiraApiToken);
