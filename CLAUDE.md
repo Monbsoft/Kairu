@@ -391,14 +391,13 @@ Si le modèle change en cours d'itération, les diagrammes concernés sont mis �
 
 Ces commandes invoquent directement l'agent correspondant via `/nom` :
 
-| Commande    | Agent déclenché | Usage typique |
-|-------------|-----------------|---------------|
-| `/dev`      | Développeur senior .NET / C# | Implémenter, corriger un bug, écrire des tests, migration EF Core |
-| `/arch`     | Architecte logiciel | Modéliser un BC, rédiger un ADR, valider une dépendance |
-| `/pm`       | Product Manager | Clarifier un besoin, rédiger une user story, cadrer une itération |
-| `/relecteur`| Relecteur de commit | Relire le dernier commit, produire un rapport bloquants/avertissements |
-| `/reviewer` | Reviewer de Pull Requests | Relire une PR avant merge |
-| `/blazor`   | Expert Front Blazor / UX | Concevoir/implémenter un composant Blazor, corriger un problème UX |
+| Commande  | Agent déclenché | Usage typique |
+|-----------|-----------------|---------------|
+| `/dev`    | Développeur senior .NET / C# | Implémenter, corriger un bug, écrire des tests, migration EF Core |
+| `/arch`   | Architecte logiciel | Modéliser un BC, rédiger un ADR, valider une dépendance |
+| `/pm`     | Product Manager | Clarifier un besoin, rédiger une user story, cadrer une itération |
+| `/re`     | Relecteur | Relire un commit ou une PR — rapport bloquants/avertissements/suggestions |
+| `/blazor` | Expert Front Blazor / UX | Concevoir/implémenter un composant Blazor, corriger un problème UX |
 
 ---
 
