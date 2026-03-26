@@ -449,7 +449,7 @@ Ces commandes invoquent directement l'agent correspondant via `/nom` :
 ## Utilisation des sous-agents
 
 Avant de lancer un sous-agent (outil `Agent`), toujours annoncer explicitement à l'utilisateur :
-- **Quel agent** est lancé (ex : `Explore`, `dev`, `arch`, `pm`, `relecteur`, `reviewer`, `blazor`)
+- **Quel agent** est lancé (ex : `Explore`, `dev`, `arch`, `pm`, `relecteur`, `blazor`)
 - **Pourquoi** (tâche déléguée en une ligne)
 
 Exemple : *"Je lance l'agent **dev** pour implémenter le use case AddTask."*
