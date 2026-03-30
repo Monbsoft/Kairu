@@ -29,10 +29,20 @@ namespace Kairudev.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "JournalComment",
-                table: "PomodoroSessions");
+            // Symétrique avec le Up() défensif : on ne supprime JournalComment que si elle existe.
+            migrationBuilder.Sql(@"
+                IF EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'[PomodoroSessions]')
+                    AND name = N'JournalComment'
+                )
+                ALTER TABLE [PomodoroSessions] DROP COLUMN [JournalComment];
+            ");
 
+            // Ce Down() recrée SprintSessions de façon simplifiée.
+            // SprintSession étant conceptuellement très proche de PomodoroSession,
+            // la contrainte OwnsOne (SprintName) n'est pas restaurée.
+            // Rollback volontairement partiel — SprintSession est définitivement supprimé.
             migrationBuilder.CreateTable(
                 name: "SprintSessions",
                 columns: table => new
