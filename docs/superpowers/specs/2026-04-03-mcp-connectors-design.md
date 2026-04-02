@@ -36,22 +36,19 @@ le travail de l'utilisateur.
 
 ## Architecture globale
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                      Client IA                               │
-│   Claude / ChatGPT / Cursor / Gemini / Mistral / Grok...    │
-└───────────┬─────────────────────────────┬────────────────────┘
-            │ MCP Protocol                │ MCP Protocol
-            │                             │
-┌───────────▼──────────┐     ┌────────────▼──────────────────┐
-│   Kairu MCP Server   │     │   Jira MCP / Linear MCP /     │
-│   (LGPL)             │     │   GitHub MCP / ...            │
-│                      │     │   (gérés par le client IA)    │
-│  tasks               │     └───────────────────────────────┘
-│  pomodoro            │
-│  journal             │
-│  stats               │
-└──────────────────────┘
+```mermaid
+graph TD
+    User(["👤 Utilisateur"])
+    AI["Client IA\nClaude · ChatGPT · Cursor · Gemini · Mistral · Grok"]
+    KairuMCP["Kairu MCP Server (LGPL)\n──────────────────\ntasks · pomodoro · journal · stats"]
+    ExtMCP["Sources externes MCP\nJira MCP · Linear MCP · GitHub MCP · ...\n(gérés par le client IA)"]
+
+    User -->|prompt| AI
+    AI -->|MCP Protocol| KairuMCP
+    AI -->|MCP Protocol| ExtMCP
+
+    style KairuMCP fill:#e8f4f8,stroke:#0077b6
+    style ExtMCP fill:#f8f4e8,stroke:#b68000
 ```
 
 **Le client IA est le chef d'orchestre.** Il se connecte à la fois à Kairu MCP
@@ -94,6 +91,33 @@ kairu://stats
   └── GET    /stats/sprint       → vue consolidée sprint (tâches + pomodoros)
 ```
 
+```mermaid
+graph LR
+    Root["kairu://"]
+    Tasks["tasks"]
+    Pomodoro["pomodoro"]
+    Journal["journal"]
+    Stats["stats"]
+
+    Root --> Tasks
+    Root --> Pomodoro
+    Root --> Journal
+    Root --> Stats
+
+    Tasks --> T1["GET /tasks"]
+    Tasks --> T2["POST /tasks"]
+    Tasks --> T3["PATCH /tasks/{id}"]
+    Tasks --> T4["DELETE /tasks/{id}"]
+
+    Pomodoro --> P1["GET /sessions"]
+    Pomodoro --> P2["GET /stats"]
+    Pomodoro --> P3["POST /start"]
+    Pomodoro --> P4["POST /stop"]
+
+    Journal --> J1["GET /{date} (lecture seule)"]
+    Stats --> S1["GET /sprint"]
+```
+
 ### Tools MCP (actions IA)
 
 | Tool | Description |
@@ -132,6 +156,23 @@ kairu://stats
 - [ ] Les tâches sont visibles dans l'UI Blazor
 - [ ] Si un ticket est déjà importé (tag existant), pas de doublon
 
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant AI as Client IA
+    participant J as Jira MCP
+    participant K as Kairu MCP
+
+    U->>AI: "Découpe mon sprint en tâches"
+    AI->>J: GET /sprint/active/tickets
+    J-->>AI: liste des tickets assignés
+    loop Pour chaque ticket
+        AI->>K: create_task(title, tag="JIRA-XXX")
+        K-->>AI: tâche créée
+    end
+    AI-->>U: "N tâches créées dans Kairu"
+```
+
 ---
 
 ### UC-S02 — Planification du lendemain
@@ -146,6 +187,26 @@ kairu://stats
 - [ ] Les tâches créées ont une date cible = demain
 - [ ] Le nombre de tâches respecte la capacité Pomodoro de l'utilisateur
 
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant AI as Client IA
+    participant J as Jira MCP
+    participant K as Kairu MCP
+
+    U->>AI: "Planifie ma journée de demain"
+    AI->>J: GET /tickets?status=in-progress
+    J-->>AI: tickets en cours
+    AI->>K: GET /tasks?status=todo
+    K-->>AI: tâches restantes
+    AI->>K: GET /pomodoro/stats
+    K-->>AI: capacité moyenne/jour
+    Note over AI: Ordonne selon capacité Pomodoro disponible
+    AI->>K: create_task(title, date=demain) × N
+    K-->>AI: tâches planifiées
+    AI-->>U: "Planning demain prêt"
+```
+
 ---
 
 ### UC-S04 — Standup automatique
@@ -158,6 +219,24 @@ kairu://stats
 **Critères d'acceptance :**
 - [ ] Le standup couvre les 3 sections (hier, aujourd'hui, bloqué)
 - [ ] Les références tickets sont incluses
+
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant AI as Client IA
+    participant K as Kairu MCP
+    participant J as Jira MCP
+
+    U->>AI: "Génère mon standup"
+    AI->>K: GET /journal/yesterday
+    K-->>AI: entrées journal J-1
+    AI->>K: GET /tasks?date=today&status=todo
+    K-->>AI: tâches du jour
+    AI->>J: GET /tickets?status=blocked
+    J-->>AI: tickets bloqués
+    Note over AI: Formate : hier · aujourd'hui · bloqué
+    AI-->>U: standup formaté (3 sections)
+```
 
 ---
 
@@ -172,6 +251,26 @@ kairu://stats
 - [ ] Un seul Pomodoro actif à la fois (`conflict` si déjà actif)
 - [ ] La tâche est associée à la session Pomodoro
 
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant AI as Client IA
+    participant K as Kairu MCP
+
+    U->>AI: "Lance un Pomodoro sur ma priorité"
+    AI->>K: GET /tasks?priority=high
+    K-->>AI: tâches haute priorité
+    Note over AI: Sélectionne la tâche la plus urgente
+    AI->>K: start_pomodoro(taskId, duration=25)
+    alt Session déjà active
+        K-->>AI: conflict
+        AI-->>U: "Une session Pomodoro est déjà en cours"
+    else OK
+        K-->>AI: session démarrée
+        AI-->>U: "Pomodoro lancé — 25 min focus"
+    end
+```
+
 ---
 
 ### UC-S06 — Rapport de sprint
@@ -184,6 +283,24 @@ kairu://stats
 **Critères d'acceptance :**
 - [ ] Pourcentage d'avancement calculé par ticket
 - [ ] Tickets à risque identifiés (non commencés, proches de la deadline)
+
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant AI as Client IA
+    participant J as Jira MCP
+    participant K as Kairu MCP
+
+    U->>AI: "Rapport de sprint"
+    AI->>J: GET /sprint/tickets
+    J-->>AI: tous les tickets du sprint
+    AI->>K: GET /tasks?tag=JIRA-*&status=completed
+    K-->>AI: tâches complétées par ticket
+    AI->>K: GET /stats/sprint
+    K-->>AI: stats consolidées (focus time, vélocité)
+    Note over AI: Calcule avancement par ticket\nIdentifie tickets à risque
+    AI-->>U: rapport sprint avec % avancement et risques
+```
 
 ---
 
@@ -220,6 +337,22 @@ Kairu.slnx (LGPL)
   │     └── Mcp/
   │           └── KairuMcpServer.cs   ← nouveau
   └── Kairu.Web/              ← inchangé
+```
+
+```mermaid
+graph TD
+    Domain["Kairu.Domain"]
+    Application["Kairu.Application"]
+    Infrastructure["Kairu.Infrastructure"]
+    Web["Kairu.Web (Blazor WASM)"]
+    McpServer["KairuMcpServer.cs ← nouveau"]
+
+    Application --> Domain
+    Infrastructure --> Application
+    Infrastructure -. contient .-> McpServer
+    Web --> Application
+
+    style McpServer fill:#d4edda,stroke:#28a745
 ```
 
 > Aucun nouveau projet, aucun nouveau BC.
