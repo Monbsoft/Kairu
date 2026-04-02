@@ -8,7 +8,7 @@
 
 ## Contexte
 
-Kairu (anciennement Kairudev) est un hub de productivité destiné à toute personne
+Kairu est un hub de productivité destiné à toute personne
 souhaitant structurer son temps avec les méthodologies Pomodoro et Agile.
 
 Ce document spécifie l'architecture **Kairu MCP Server** :
