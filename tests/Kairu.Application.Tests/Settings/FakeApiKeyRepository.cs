@@ -9,7 +9,15 @@ internal sealed class FakeApiKeyRepository : IApiKeyRepository
 
     public Task UpsertAsync(UserApiKey apiKey, CancellationToken cancellationToken = default)
     {
-        Stored = apiKey;
+        if (Stored is not null && Stored.OwnerId == apiKey.OwnerId)
+        {
+            // Simulate EfCore upsert: mutate the existing entity via Regenerate
+            Stored.Regenerate(apiKey.KeyHash, apiKey.CreatedAt);
+        }
+        else
+        {
+            Stored = apiKey;
+        }
         return Task.CompletedTask;
     }
 

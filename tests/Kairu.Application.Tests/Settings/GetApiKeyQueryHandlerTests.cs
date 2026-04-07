@@ -41,18 +41,12 @@ public sealed class GetApiKeyQueryHandlerTests
     }
 
     [Fact]
-    public async Task Should_NotExposeHash_When_KeyExists()
+    public void Should_NotExposeHash_When_KeyExists()
     {
-        var apiKey = UserApiKey.Create(FakeCurrentUserService.TestUserId, "secrethash", DateTime.UtcNow);
-        await _repository.UpsertAsync(apiKey);
+        // GetApiKeyResult must only expose Exists + CreatedAt — never hash or token
+        var properties = typeof(GetApiKeyResult).GetProperties();
+        var names = properties.Select(p => p.Name).OrderBy(n => n).ToArray();
 
-        var result = await _sut.Handle(new GetApiKeyQuery());
-
-        // GetApiKeyResult ne contient pas de hash — vérification structurelle
-        Assert.DoesNotContain(
-            typeof(GetApiKeyResult).GetProperties(),
-            p => p.Name.Contains("Hash", StringComparison.OrdinalIgnoreCase)
-              || p.Name.Contains("Key", StringComparison.OrdinalIgnoreCase)
-              || p.Name.Contains("Token", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(["CreatedAt", "Exists"], names);
     }
 }
