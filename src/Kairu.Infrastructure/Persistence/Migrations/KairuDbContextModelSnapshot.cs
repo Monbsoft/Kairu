@@ -156,6 +156,10 @@ namespace Kairu.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("KeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserApiKeys_KeyHash");
+
                     b.ToTable("UserApiKeys", (string)null);
                 });
 

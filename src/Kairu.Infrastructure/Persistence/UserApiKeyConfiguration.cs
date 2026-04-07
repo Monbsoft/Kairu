@@ -14,6 +14,7 @@ internal sealed class UserApiKeyConfiguration : IEntityTypeConfiguration<UserApi
         builder.HasKey(k => k.Id);
 
         builder.Property(k => k.Id)
+            .HasColumnType("uniqueidentifier")
             .HasConversion(v => v.Value, v => UserId.From(v))
             .ValueGeneratedNever();
 
@@ -23,9 +24,15 @@ internal sealed class UserApiKeyConfiguration : IEntityTypeConfiguration<UserApi
             .IsRequired();
 
         builder.Property(k => k.CreatedAt)
+            .HasColumnType("datetime2")
             .IsRequired();
 
-        // OwnerId is a computed property => Id, no column mapping needed
+        // OwnerId is a computed property => Id, EF must not map it to a column
         builder.Ignore(k => k.OwnerId);
+
+        // Unique index on KeyHash — auth hot path looks up by hash on every MCP request
+        builder.HasIndex(k => k.KeyHash)
+            .IsUnique()
+            .HasDatabaseName("IX_UserApiKeys_KeyHash");
     }
 }

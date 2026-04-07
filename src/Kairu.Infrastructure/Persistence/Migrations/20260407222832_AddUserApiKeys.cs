@@ -23,12 +23,19 @@ namespace Kairu.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("PK_UserApiKeys", x => x.Id);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserApiKeys_KeyHash",
+                table: "UserApiKeys",
+                column: "KeyHash",
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("IF OBJECT_ID(N'[UserApiKeys]', N'U') IS NOT NULL DROP TABLE [UserApiKeys];");
+            migrationBuilder.DropTable(
+                name: "UserApiKeys");
         }
     }
 }

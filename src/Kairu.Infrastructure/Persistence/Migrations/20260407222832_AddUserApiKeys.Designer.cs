@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kairu.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(KairuDbContext))]
-    [Migration("20260407195524_AddUserApiKeys")]
+    [Migration("20260407222832_AddUserApiKeys")]
     partial class AddUserApiKeys
     {
         /// <inheritdoc />
@@ -158,6 +158,10 @@ namespace Kairu.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(64)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserApiKeys_KeyHash");
 
                     b.ToTable("UserApiKeys", (string)null);
                 });
