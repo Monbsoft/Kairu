@@ -35,7 +35,7 @@ public sealed class ApiKeyController : ControllerBase
         if (!result.IsSuccess)
             return BadRequest(new { error = result.Error });
 
-        return Ok(new { token = result.Token });
+        return StatusCode(StatusCodes.Status201Created, new { token = result.Token });
     }
 
     /// <summary>Révoque la clé API de l'utilisateur courant.</summary>

@@ -34,7 +34,7 @@ public sealed class ApiKeyAuthHandler : AuthenticationHandler<ApiKeyAuthOptions>
 
         var token = headerValue["Bearer ".Length..].Trim();
 
-        if (string.IsNullOrEmpty(token) || !token.StartsWith("kairu_"))
+        if (string.IsNullOrEmpty(token) || !token.StartsWith("kairu_", StringComparison.Ordinal))
             return AuthenticateResult.Fail("Invalid API key format.");
 
         // Hash SHA-256 du token (même normalisation que GenerateApiKeyCommandHandler)

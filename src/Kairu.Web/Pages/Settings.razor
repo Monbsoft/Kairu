@@ -218,13 +218,19 @@ else
     private async Task LoadApiKeyStatusAsync()
     {
         _apiKeyLoading = true;
-        var status = await SettingsApi.GetApiKeyStatusAsync();
-        if (status is not null)
+        try
         {
-            _apiKeyExists = status.Exists;
-            _apiKeyCreatedAt = status.CreatedAt;
+            var status = await SettingsApi.GetApiKeyStatusAsync();
+            if (status is not null)
+            {
+                _apiKeyExists = status.Exists;
+                _apiKeyCreatedAt = status.CreatedAt;
+            }
         }
-        _apiKeyLoading = false;
+        finally
+        {
+            _apiKeyLoading = false;
+        }
     }
 
     private async Task GenerateApiKey()
@@ -232,36 +238,56 @@ else
         _apiKeyBusy = true;
         _apiKeyError = null;
         _copied = false;
-        var result = await SettingsApi.GenerateApiKeyAsync();
-        if (result is not null)
+        try
         {
-            _apiKeyToken = result.Token;
-            _apiKeyExists = true;
-            _apiKeyCreatedAt = DateTime.UtcNow;
+            var result = await SettingsApi.GenerateApiKeyAsync();
+            if (result is not null)
+            {
+                _apiKeyToken = result.Token;
+                _apiKeyExists = true;
+                _apiKeyCreatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _apiKeyError = "Impossible de générer la clé API.";
+            }
         }
-        else
+        catch
         {
             _apiKeyError = "Impossible de générer la clé API.";
         }
-        _apiKeyBusy = false;
+        finally
+        {
+            _apiKeyBusy = false;
+        }
     }
 
     private async Task RevokeApiKey()
     {
         _apiKeyBusy = true;
         _apiKeyError = null;
-        var success = await SettingsApi.RevokeApiKeyAsync();
-        if (success)
+        try
         {
-            _apiKeyExists = false;
-            _apiKeyCreatedAt = null;
-            _apiKeyToken = null;
+            var success = await SettingsApi.RevokeApiKeyAsync();
+            if (success)
+            {
+                _apiKeyExists = false;
+                _apiKeyCreatedAt = null;
+                _apiKeyToken = null;
+            }
+            else
+            {
+                _apiKeyError = "Impossible de révoquer la clé API.";
+            }
         }
-        else
+        catch
         {
             _apiKeyError = "Impossible de révoquer la clé API.";
         }
-        _apiKeyBusy = false;
+        finally
+        {
+            _apiKeyBusy = false;
+        }
     }
 
     private async Task CopyToken()
