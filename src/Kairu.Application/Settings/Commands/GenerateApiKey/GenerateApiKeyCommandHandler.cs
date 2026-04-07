@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using Kairu.Application.Common;
-using Kairu.Application.Settings.Common;
 using Kairu.Domain.Settings;
 using Microsoft.Extensions.Logging;
 using Monbsoft.BrilliantMediator.Abstractions.Commands;

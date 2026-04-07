@@ -1,7 +1,6 @@
 using Kairu.Domain.Identity;
-using Kairu.Domain.Settings;
 
-namespace Kairu.Application.Settings.Common;
+namespace Kairu.Domain.Settings;
 
 public interface IApiKeyRepository
 {
