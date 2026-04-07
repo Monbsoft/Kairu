@@ -20,7 +20,6 @@ public sealed class KairuDbContext : DbContext
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalComment> JournalComments => Set<JournalComment>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
-    public DbSet<UserApiKey> UserApiKeys => Set<UserApiKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +41,5 @@ public sealed class KairuDbContext : DbContext
         modelBuilder.ApplyConfiguration(new JournalEntryConfiguration());
         modelBuilder.ApplyConfiguration(new JournalCommentConfiguration());
         modelBuilder.ApplyConfiguration(new UserSettingsConfiguration());
-        modelBuilder.ApplyConfiguration(new UserApiKeyConfiguration());
     }
 }

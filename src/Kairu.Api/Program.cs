@@ -105,15 +105,9 @@ builder.Services
                 context.RunClaimActions(userJson.RootElement);
             }
         };
-    })
-    .AddScheme<ApiKeyAuthOptions, ApiKeyAuthHandler>("ApiKey", _ => { });
+    });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("McpApiKey", policy =>
-        policy.AddAuthenticationSchemes("ApiKey")
-              .RequireAuthenticatedUser());
-});
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 builder.Services.AddMcpServer()
@@ -167,7 +161,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapMcp("/mcp").RequireAuthorization("McpApiKey");
+app.MapMcp("/mcp").RequireAuthorization();
 app.MapDefaultEndpoints();
 app.MapFallbackToFile("index.html");
 
