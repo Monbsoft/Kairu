@@ -4,6 +4,7 @@ using System.Text.Json;
 using Kairu.Application.Common;
 using Kairu.Api.Auth;
 using Kairu.Api.Generated;
+using Kairu.Api.Mcp;
 using Kairu.Domain.Common;
 using Kairu.Infrastructure;
 using Kairu.Infrastructure.Persistence;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using ModelContextProtocol.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,11 +105,20 @@ builder.Services
                 context.RunClaimActions(userJson.RootElement);
             }
         };
-    });
+    })
+    .AddScheme<ApiKeyAuthOptions, ApiKeyAuthHandler>("ApiKey", _ => { });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("McpApiKey", policy =>
+        policy.AddAuthenticationSchemes("ApiKey")
+              .RequireAuthenticatedUser());
+});
 
 builder.Services.AddControllers();
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithTools<KairuMcpTools>();
 builder.Services.AddOpenApi();
 
 var allowedOrigins = builder.Configuration
@@ -156,6 +167,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapMcp("/mcp").RequireAuthorization("McpApiKey");
 app.MapDefaultEndpoints();
 app.MapFallbackToFile("index.html");
 

@@ -49,6 +49,69 @@ else
             </div>
         </div>
 
+        <!-- API Key Section -->
+        <hr class="my-4" />
+        <div class="mb-5">
+            <h4>🔑 Clé API (MCP)</h4>
+            <p class="text-body-secondary">Utilisée par les clients IA (Claude Code, Codex…) pour accéder à Kairu via le protocole MCP.</p>
+
+            @if (_apiKeyLoading)
+            {
+                <p>Chargement…</p>
+            }
+            else if (_apiKeyToken is not null)
+            {
+                <div class="alert alert-warning">
+                    <strong>⚠ Copiez ce token maintenant — il ne sera plus affiché.</strong>
+                    <div class="d-flex gap-2 align-items-center mt-2">
+                        <code class="flex-grow-1 user-select-all p-2 bg-body-tertiary rounded" style="word-break: break-all;">@_apiKeyToken</code>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CopyToken" title="Copier">
+                            @(_copied ? "✓ Copié" : "📋 Copier")
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="DismissToken">
+                    J'ai copié mon token
+                </button>
+            }
+            else
+            {
+                @if (_apiKeyExists)
+                {
+                    <div class="mb-3">
+                        <span class="badge bg-success me-2">● Active</span>
+                        @if (_apiKeyCreatedAt.HasValue)
+                        {
+                            <span class="text-body-secondary small">Générée le @_apiKeyCreatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <span class="badge bg-secondary me-2">● Aucune clé</span>
+                    </div>
+                }
+
+                @if (_apiKeyError is not null)
+                {
+                    <div class="alert alert-danger">⚠ @_apiKeyError</div>
+                }
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" @onclick="GenerateApiKey" disabled="@_apiKeyBusy">
+                        @(_apiKeyBusy ? "Génération…" : (_apiKeyExists ? "Régénérer" : "Générer une clé"))
+                    </button>
+                    @if (_apiKeyExists)
+                    {
+                        <button type="button" class="btn btn-outline-danger" @onclick="RevokeApiKey" disabled="@_apiKeyBusy">
+                            Révoquer
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+
         <hr class="my-4" />
         <h4>Pomodoro</h4>
         <EditForm Model="_form" OnValidSubmit="SavePomodoroSettings">
@@ -111,6 +174,15 @@ else
     private string _selectedTheme = "System";
     private string _selectedRingtone = "AlarmClock";
 
+    // API Key state — token kept only in component RAM, never persisted
+    private bool _apiKeyLoading;
+    private bool _apiKeyBusy;
+    private bool _apiKeyExists;
+    private DateTime? _apiKeyCreatedAt;
+    private string? _apiKeyToken;
+    private string? _apiKeyError;
+    private bool _copied;
+
     private sealed class SettingsForm
     {
         public int SprintDuration { get; set; } = 25;
@@ -138,7 +210,97 @@ else
             await ApplyTheme(_selectedTheme);
         }
 
+        await LoadApiKeyStatusAsync();
+
         _loaded = true;
+    }
+
+    private async Task LoadApiKeyStatusAsync()
+    {
+        _apiKeyLoading = true;
+        try
+        {
+            var status = await SettingsApi.GetApiKeyStatusAsync();
+            if (status is not null)
+            {
+                _apiKeyExists = status.Exists;
+                _apiKeyCreatedAt = status.CreatedAt;
+            }
+        }
+        finally
+        {
+            _apiKeyLoading = false;
+        }
+    }
+
+    private async Task GenerateApiKey()
+    {
+        _apiKeyBusy = true;
+        _apiKeyError = null;
+        _copied = false;
+        try
+        {
+            var result = await SettingsApi.GenerateApiKeyAsync();
+            if (result is not null)
+            {
+                _apiKeyToken = result.Token;
+                _apiKeyExists = true;
+                _apiKeyCreatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _apiKeyError = "Impossible de générer la clé API.";
+            }
+        }
+        catch
+        {
+            _apiKeyError = "Impossible de générer la clé API.";
+        }
+        finally
+        {
+            _apiKeyBusy = false;
+        }
+    }
+
+    private async Task RevokeApiKey()
+    {
+        _apiKeyBusy = true;
+        _apiKeyError = null;
+        try
+        {
+            var success = await SettingsApi.RevokeApiKeyAsync();
+            if (success)
+            {
+                _apiKeyExists = false;
+                _apiKeyCreatedAt = null;
+                _apiKeyToken = null;
+            }
+            else
+            {
+                _apiKeyError = "Impossible de révoquer la clé API.";
+            }
+        }
+        catch
+        {
+            _apiKeyError = "Impossible de révoquer la clé API.";
+        }
+        finally
+        {
+            _apiKeyBusy = false;
+        }
+    }
+
+    private async Task CopyToken()
+    {
+        if (_apiKeyToken is null) return;
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _apiKeyToken);
+        _copied = true;
+    }
+
+    private void DismissToken()
+    {
+        _apiKeyToken = null;
+        _copied = false;
     }
 
     private async Task OnThemeChanged()

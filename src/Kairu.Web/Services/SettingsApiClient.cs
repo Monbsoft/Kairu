@@ -9,6 +9,9 @@ public sealed record UserSettingsDto(
     string? JiraEmail,
     bool JiraConfigured);
 
+public sealed record ApiKeyStatusDto(bool Exists, DateTime? CreatedAt);
+public sealed record ApiKeyTokenDto(string Token);
+
 public sealed class SettingsApiClient
 {
     private readonly HttpClient _httpClient;
@@ -34,6 +37,24 @@ public sealed class SettingsApiClient
     {
         var request = new { RingtonePreference = ringtonePreference };
         var response = await _httpClient.PutAsJsonAsync("api/settings/ringtone", request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<ApiKeyStatusDto?> GetApiKeyStatusAsync()
+    {
+        return await _httpClient.GetFromJsonAsync<ApiKeyStatusDto>("api/settings/api-key");
+    }
+
+    public async Task<ApiKeyTokenDto?> GenerateApiKeyAsync()
+    {
+        var response = await _httpClient.PostAsync("api/settings/api-key", null);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<ApiKeyTokenDto>();
+    }
+
+    public async Task<bool> RevokeApiKeyAsync()
+    {
+        var response = await _httpClient.DeleteAsync("api/settings/api-key");
         return response.IsSuccessStatusCode;
     }
 }

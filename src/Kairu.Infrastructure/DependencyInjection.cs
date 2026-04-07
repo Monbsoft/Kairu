@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IPomodoroSettingsRepository, EfCorePomodoroSettingsRepository>();
         services.AddScoped<IJournalEntryRepository, EfCoreJournalEntryRepository>();
         services.AddScoped<IUserSettingsRepository, EfCoreUserSettingsRepository>();
+        services.AddScoped<IApiKeyRepository, EfCoreApiKeyRepository>();
 
         services.AddHttpClient<IJiraTicketService, JiraApiClient>();
 
