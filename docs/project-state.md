@@ -7,7 +7,9 @@
 
 ## Résumé état actuel
 
-**Dernière itération complétée : #24 — Renommage Kairudev → Kairu** ✅ COMPLÉTÉE (2026-04-07)
+**Dernière itération complétée : #26 — MCP OAuth 2.1 + PKCE** ✅ COMPLÉTÉE (2026-04-08)
+
+**Itération précédente : #24 — Renommage Kairudev → Kairu** ✅ COMPLÉTÉE (2026-04-07)
 
 **Prochaine itération prévue : à définir**
 
@@ -44,6 +46,16 @@
 - ✅ **MAUI** : `MauiAuthService`, `SecureStorage`, `Login.razor` MAUI avec même flux
 - ✅ `AddCookie()` + `DefaultSignInScheme = Cookie` (requis par RemoteAuthenticationHandler)
 - ✅ `WebBaseUrl` dans `appsettings.Development.json` (redirection API → Web correcte)
+- ✅ **MCP OAuth 2.1 + PKCE** : clients IA (Claude Code, Codex) via `OAuthController` — discovery automatique, login GitHub, JWT identique au flux Web
+- ✅ `JwtTokenService` partagé entre `AuthController` et `OAuthController`
+
+**MCP Server :**
+- ✅ Serveur MCP sur `/mcp` (SDK `ModelContextProtocol.AspNetCore` 1.2.0, HTTP+SSE)
+- ✅ 4 outils : `create_task`, `list_tasks`, `complete_task`, `delete_task`
+- ✅ Auth OAuth 2.1 + PKCE via GitHub (pas d'API Key)
+- ✅ Endpoints OAuth : `/.well-known/oauth-authorization-server`, `/oauth/authorize`, `/oauth/github/callback`, `/oauth/token`
+- ✅ `IAuthorizationCodeStore` (Application) + `InMemoryAuthorizationCodeStore` (Infrastructure)
+- ✅ `McpAuthenticationHandler` SDK pour resource metadata dans les 401
 
 **Multi-users :**
 - ✅ `OwnerId` (UserId) ajouté à `DeveloperTask`, `PomodoroSession`, `JournalEntry`
@@ -63,8 +75,8 @@
 - ✅ Application en production : https://kairudev-prod.azurewebsites.net
 - ✅ Redéploiement : `powershell -ExecutionPolicy Bypass -File .\infra\deploy-linux.ps1 -Environment prod`
 
-**Tests :** 192 au total ✅ (113 Domain + 79 Application)
-⚠️ **Dette technique** : `Kairu.Infrastructure.Tests` supprimé de la solution (résidu bin/obj uniquement). `Kairu.IntegrationTests` non maintenu — step definitions obsolètes vs domain refactorisé.
+**Tests :** 197 au total ✅ (113 Domain + 84 Application)
+⚠️ **Dette technique** : `Kairu.Infrastructure.Tests` supprimé de la solution (résidu bin/obj uniquement). `Kairu.IntegrationTests` non maintenu — step definitions obsolètes vs domain refactorisé. 4 tests Pomodoro (sprint sessions) échouent (pré-existant depuis #23).
 
 **Infrastructure :** API REST, Blazor WASM, .NET MAUI, SQLite (local) + **Azure SQL (prod)**
 
@@ -104,7 +116,8 @@
 | ~~#19~~ | ~~Retrait Jira (pages + configuration UI) — suppression pages Tickets Web/MAUI, retrait menu, retrait config Jira dans Settings, retrait endpoint API `/api/settings/jira`~~ | ~~✅ Livré~~ | ~~2026-03-23~~ |
 | ~~#20~~ | ~~Filtrage et tri des tâches — défaut ouvertes + récentes, recherche titre, filtre statut, côté serveur~~ | ~~✅ Livré~~ | ~~2026-03-24~~ |
 | ~~#23~~ | ~~Fusion SprintSession / PomodoroSession (ADR-005) — `SprintSession` supprimé, sessions libres portées par `PomodoroSession` (`PlannedDurationMinutes = 0`)~~ | ~~✅ Livré~~ | ~~2026-03-26~~ |
-| **#24** | **Renommage Kairudev → Kairu — namespaces C#, projets, solution, `manifest.json`, fichier `.http`, correction CSS menu/bouton GitHub** | **✅ Livré** | **2026-04-07** |
+| ~~#24~~ | ~~Renommage Kairudev → Kairu — namespaces C#, projets, solution, `manifest.json`, fichier `.http`, correction CSS menu/bouton GitHub~~ | ~~✅ Livré~~ | ~~2026-04-07~~ |
+| **#26** | **MCP OAuth 2.1 + PKCE — serveur MCP 4 outils Tasks, auth OAuth GitHub, suppression API Key, JwtTokenService partagé** | **✅ Livré** | **2026-04-08** |
 | ~~#22~~ | ~~Note sur le sprint libre — champ Note remplace Nom, persistée comme JournalComment, éditable dans le journal~~ | ~~✅ Livré~~ | ~~2026-03-25~~ |
 | ~~#21~~ | ~~Tags sur les tâches — Value Object `TaskTag`, saisie chips/badges (création + édition), affichage couleurs automatiques, max 5, JSON en base~~ | ~~✅ Livré~~ | ~~2026-03-25~~ |
 
@@ -112,15 +125,46 @@
 
 ## Dernière itération livrée
 
-**#24 — Renommage Kairudev → Kairu** — Livré le 2026-04-07
+**#26 — MCP OAuth 2.1 + PKCE** — Livré le 2026-04-08
 
 ### Ce qui a été livré
+
+**Serveur MCP :**
+- 4 outils MCP (`create_task`, `list_tasks`, `complete_task`, `delete_task`) sur `/mcp`
+- SDK `ModelContextProtocol.AspNetCore` 1.2.0, transport HTTP+SSE
+- `KairuMcpTools` : dispatch via `IMediator` (BrilliantMediator)
+
+**OAuth 2.1 Authorization Server (remplace API Key) :**
+- `OAuthController` : 4 endpoints (`/.well-known/oauth-authorization-server`, `/oauth/authorize`, `/oauth/github/callback`, `/oauth/token`)
+- PKCE S256 obligatoire, `client_id = "kairu-mcp"`
+- État PKCE préservé via cookie chiffré (`IDataProtector`, JSON, `SameSite=None`)
+- `IAuthorizationCodeStore` + `InMemoryAuthorizationCodeStore` (ConcurrentDictionary, single-use, TTL 5min, purge passive 10min)
+- `McpAuthenticationHandler` SDK : resource metadata dans les 401 challenges
+- JWT identique au flux Web (claims `sub` + `name` + `login`)
+
+**Refactoring :**
+- `JwtTokenService` partagé entre `AuthController` et `OAuthController` (DRY)
+- Suppression complète API Key : `UserApiKey`, `IApiKeyRepository`, 3 handlers, `ApiKeyAuthHandler`, `ApiKeyController`, UI Settings, migration `DropUserApiKeys`
+
+**Configuration client MCP :**
+```json
+{
+  "mcpServers": {
+    "kairu": {
+      "url": "https://kairudev-prod.azurewebsites.net/mcp"
+    }
+  }
+}
+```
+
+### Itération précédente
+
+**#24 — Renommage Kairudev → Kairu** — Livré le 2026-04-07
 
 - Renommage complet `Kairudev` → `Kairu` : namespaces C#, projets `.csproj`, solution `.slnx`, migrations EF Core, agents, répertoires `src/`
 - `manifest.json` : `name` et `short_name` mis à jour (`"Kairu"`)
 - `Kairudev.Api.http` renommé en `Kairu.Api.http`, variable `@Kairu.Api_HostAddress`
 - Correction CSS : `.btn-github` déplacé de `Login.razor.css` (scoped) vers `app.css` (global)
-- Menu de navigation et bouton GitHub à nouveau visibles
 
 ⚠️ **Dette technique** : `appsettings.Production.json` pointe encore vers `kairudev-prod.azurewebsites.net` (URL Azure App Service indépendante du nom — à mettre à jour si redéploiement sous nouveau nom de resource).
 

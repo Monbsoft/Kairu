@@ -1,3 +1,4 @@
+using Kairu.Application.OAuth;
 using Kairu.Application.Tickets;
 using Kairu.Domain.Identity;
 using Kairu.Domain.Journal;
@@ -6,6 +7,7 @@ using Kairu.Domain.Settings;
 using Kairu.Domain.Tasks;
 using Kairu.Infrastructure.Identity;
 using Kairu.Infrastructure.Jira;
+using Kairu.Infrastructure.OAuth;
 using Kairu.Infrastructure.Persistence;
 using Kairu.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -29,8 +31,8 @@ public static class DependencyInjection
         services.AddScoped<IPomodoroSettingsRepository, EfCorePomodoroSettingsRepository>();
         services.AddScoped<IJournalEntryRepository, EfCoreJournalEntryRepository>();
         services.AddScoped<IUserSettingsRepository, EfCoreUserSettingsRepository>();
-        services.AddScoped<IApiKeyRepository, EfCoreApiKeyRepository>();
 
+        services.AddSingleton<IAuthorizationCodeStore, InMemoryAuthorizationCodeStore>();
         services.AddHttpClient<IJiraTicketService, JiraApiClient>();
 
         return services;

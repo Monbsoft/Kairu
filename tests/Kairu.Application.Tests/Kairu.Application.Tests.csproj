@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kairu.Application\Kairu.Application.csproj" />
     <ProjectReference Include="..\..\src\Kairu.Domain\Kairu.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Kairu.Infrastructure\Kairu.Infrastructure.csproj" />
   </ItemGroup>
 
   <!-- Exclude non-migrated tests (still using old Interactor/Presenter architecture) -->

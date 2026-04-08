@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kairu.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(KairuDbContext))]
-    [Migration("20260407222832_AddUserApiKeys")]
-    partial class AddUserApiKeys
+    [Migration("20260407233959_DropUserApiKeys")]
+    partial class DropUserApiKeys
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -142,28 +142,6 @@ namespace Kairu.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PomodoroSessions", (string)null);
-                });
-
-            modelBuilder.Entity("Kairu.Domain.Settings.UserApiKey", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("KeyHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("KeyHash")
-                        .IsUnique()
-                        .HasDatabaseName("IX_UserApiKeys_KeyHash");
-
-                    b.ToTable("UserApiKeys", (string)null);
                 });
 
             modelBuilder.Entity("Kairu.Domain.Settings.UserSettings", b =>

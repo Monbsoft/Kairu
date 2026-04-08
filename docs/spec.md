@@ -1710,6 +1710,15 @@ sequenceDiagram
   - Ajout ~500 KB au bundle WASM (à surveiller).
   - `TaskDescription.MaxLength` porté de 1 000 → 5 000 caractères + migration EF Core.
 
+### ADR-014 — MCP OAuth 2.1 + PKCE (remplacement API Key)
+- **Contexte :** Itération #25 a introduit un serveur MCP avec authentification par API Key propriétaire (`kairu_xxx`). Ce mécanisme impose un flux manuel (génération, copie, configuration). Les clients MCP (Claude Code, Codex) supportent nativement OAuth 2.1 avec PKCE.
+- **Décision :** Remplacer l'API Key par un Authorization Server OAuth 2.1 intégré dans Kairu API. PKCE S256 obligatoire, `client_id = "kairu-mcp"` (statique). GitHub OAuth comme Identity Provider (réutilise le flux existant). État PKCE stocké dans un cookie chiffré (`IDataProtector`). Authorization codes en mémoire (`InMemoryAuthorizationCodeStore`, Singleton, TTL 5min). JWT identique au flux Web via `JwtTokenService` partagé.
+- **Conséquences :**
+  - Configuration client simplifiée : seule l'URL du serveur MCP suffit (zéro token à copier).
+  - Pas de Dynamic Client Registration (à évaluer si besoin multi-clients).
+  - Authorization codes perdus au redémarrage du serveur (acceptable — TTL 5min, single-use).
+  - Table `UserApiKeys` supprimée (migration `DropUserApiKeys`).
+
 ---
 
 ## Bounded Context : Sprint

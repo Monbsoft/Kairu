@@ -1,7 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
 using Kairu.Application.Identity.Commands.GetOrCreateUser;
 using Kairu.Domain.Common;
 using Microsoft.AspNetCore.Authentication;
@@ -9,7 +6,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using Monbsoft.BrilliantMediator.Abstractions;
 
 namespace Kairu.Api.Auth;
@@ -20,16 +16,19 @@ public sealed class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IConfiguration _configuration;
+    private readonly JwtTokenService _jwtTokenService;
     private readonly ILogger<AuthController> _logger;
     private readonly IReadOnlySet<string> _allowedCallbackUrls;
 
     public AuthController(
         IMediator mediator,
         IConfiguration configuration,
+        JwtTokenService jwtTokenService,
         ILogger<AuthController> logger)
     {
         _mediator = mediator;
         _configuration = configuration;
+        _jwtTokenService = jwtTokenService;
         _logger = logger;
         _allowedCallbackUrls = new HashSet<string>(
             configuration.GetSection("AllowedCallbackUrls").Get<string[]>() ?? [],
@@ -81,7 +80,7 @@ public sealed class AuthController : ControllerBase
             return Redirect($"{webBase}/login#auth-error=server");
         }
 
-        var token = GenerateJwt(userResult.Value);
+        var token = _jwtTokenService.GenerateToken(userResult.Value);
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -106,27 +105,4 @@ public sealed class AuthController : ControllerBase
         return Ok(new { sub, name, login });
     }
 
-    private string GenerateJwt(GetOrCreateUserResult user)
-    {
-        var secretKey = _configuration["Jwt:SecretKey"]
-            ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expiryHours = _configuration.GetValue<int>("Jwt:ExpiryHours", 24);
-
-        var claims = new[]
-        {
-            new Claim("sub", user.UserId.Value.ToString()),
-            new Claim("name", user.DisplayName),
-            new Claim("login", user.Login),
-        };
-
-        var token = new JwtSecurityToken(
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(expiryHours),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
 }
