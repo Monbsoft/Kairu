@@ -3,6 +3,7 @@
 @using Kairu.Web.Services
 @inject PomodoroApiClient PomodoroApi
 @inject SettingsApiClient SettingsApi
+@inject McpTokenService McpTokenApi
 @inject IJSRuntime JSRuntime
 @inject ISoundService SoundService
 
@@ -48,6 +49,79 @@ else
                 <div class="form-text">Joué automatiquement à la fin de chaque sprint ou pause.</div>
             </div>
         </div>
+
+        <!-- MCP Token Section -->
+        <div class="mb-5">
+            <h4>Token MCP</h4>
+
+            @if (_mcpLoading)
+            {
+                <p class="text-muted">Chargement du statut…</p>
+            }
+            else if (_mcpHasToken)
+            {
+                <p class="mb-2">
+                    Token actif — expire le
+                    <strong>@(_mcpExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</strong>
+                </p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary"
+                            @onclick="RegenerateToken" disabled="@_mcpActionInProgress">
+                        @(_mcpActionInProgress ? "En cours…" : "Régénérer")
+                    </button>
+                    <button type="button" class="btn btn-outline-danger"
+                            @onclick="RevokeToken" disabled="@_mcpActionInProgress">
+                        @(_mcpActionInProgress ? "En cours…" : "Révoquer")
+                    </button>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted mb-2">Aucun token MCP configuré.</p>
+                <button type="button" class="btn btn-primary"
+                        @onclick="GenerateToken" disabled="@_mcpActionInProgress">
+                    @(_mcpActionInProgress ? "Génération…" : "Générer un token")
+                </button>
+            }
+
+            @if (_mcpError is not null)
+            {
+                <div class="alert alert-danger mt-3">@_mcpError</div>
+            }
+        </div>
+
+        <!-- MCP Token One-Shot Modal -->
+        @if (_mcpRawToken is not null)
+        {
+            <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5);" role="dialog" aria-modal="true" aria-labelledby="mcpTokenModalTitle">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="mcpTokenModalTitle">Token MCP généré</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <strong>Attention :</strong> Ce token ne sera plus affiché. Copiez-le maintenant.
+                            </div>
+                            <label class="form-label" for="mcpTokenValue">Token</label>
+                            <div class="d-flex gap-2">
+                                <input id="mcpTokenValue" type="text" class="form-control font-monospace"
+                                       readonly value="@_mcpRawToken" />
+                                <button type="button" class="btn btn-outline-secondary"
+                                        @onclick="CopyTokenToClipboard">
+                                    @(_mcpCopied ? "Copie OK" : "Copier")
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" @onclick="DismissTokenModal">
+                                J'ai copié, fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
 
         <hr class="my-4" />
         <h4>Pomodoro</h4>
@@ -111,6 +185,15 @@ else
     private string _selectedTheme = "System";
     private string _selectedRingtone = "AlarmClock";
 
+    // MCP Token state
+    private bool _mcpLoading = true;
+    private bool _mcpHasToken;
+    private DateTime? _mcpExpiresAt;
+    private bool _mcpActionInProgress;
+    private string? _mcpRawToken;
+    private bool _mcpCopied;
+    private string? _mcpError;
+
     private sealed class SettingsForm
     {
         public int SprintDuration { get; set; } = 25;
@@ -138,7 +221,112 @@ else
             await ApplyTheme(_selectedTheme);
         }
 
+        // Load MCP token status
+        await LoadMcpStatusAsync();
+
         _loaded = true;
+    }
+
+    private async Task LoadMcpStatusAsync()
+    {
+        _mcpLoading = true;
+        _mcpError = null;
+        var status = await McpTokenApi.GetStatusAsync();
+        if (status is not null)
+        {
+            _mcpHasToken = status.HasToken;
+            _mcpExpiresAt = status.ExpiresAt;
+        }
+        _mcpLoading = false;
+    }
+
+    private async Task GenerateToken()
+    {
+        _mcpActionInProgress = true;
+        _mcpError = null;
+        _mcpCopied = false;
+        try
+        {
+            var rawToken = await McpTokenApi.GenerateAsync();
+            if (rawToken is not null)
+            {
+                _mcpRawToken = rawToken;
+                _mcpHasToken = true;
+                _mcpExpiresAt = DateTime.UtcNow.AddYears(1);
+            }
+            else
+            {
+                _mcpError = "La génération du token a échoué. Veuillez réessayer.";
+            }
+        }
+        finally
+        {
+            _mcpActionInProgress = false;
+        }
+    }
+
+    private async Task RegenerateToken()
+    {
+        _mcpActionInProgress = true;
+        _mcpError = null;
+        _mcpCopied = false;
+        try
+        {
+            // Revoke then generate
+            await McpTokenApi.RevokeAsync();
+            var rawToken = await McpTokenApi.GenerateAsync();
+            if (rawToken is not null)
+            {
+                _mcpRawToken = rawToken;
+                _mcpHasToken = true;
+                _mcpExpiresAt = DateTime.UtcNow.AddYears(1);
+            }
+            else
+            {
+                _mcpError = "La régénération du token a échoué. Veuillez réessayer.";
+                await LoadMcpStatusAsync();
+            }
+        }
+        finally
+        {
+            _mcpActionInProgress = false;
+        }
+    }
+
+    private async Task RevokeToken()
+    {
+        _mcpActionInProgress = true;
+        _mcpError = null;
+        try
+        {
+            var success = await McpTokenApi.RevokeAsync();
+            if (success)
+            {
+                _mcpHasToken = false;
+                _mcpExpiresAt = null;
+            }
+            else
+            {
+                _mcpError = "La révocation du token a échoué. Veuillez réessayer.";
+            }
+        }
+        finally
+        {
+            _mcpActionInProgress = false;
+        }
+    }
+
+    private async Task CopyTokenToClipboard()
+    {
+        if (_mcpRawToken is null) return;
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _mcpRawToken);
+        _mcpCopied = true;
+    }
+
+    private void DismissTokenModal()
+    {
+        _mcpRawToken = null;
+        _mcpCopied = false;
     }
 
     private async Task OnThemeChanged()

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Kairu.Application.Common;
 using Kairu.Api.Auth;
+using Kairu.Api.Auth.Mcp;
 using Kairu.Api.Generated;
 using Kairu.Api.Mcp;
 using Kairu.Domain.Common;
@@ -109,33 +110,13 @@ builder.Services
             }
         };
     })
-    .AddMcp(options =>
-    {
-        // Resource metadata returned in 401 challenges on /mcp
-        // AuthorizationServers will be set dynamically per-request
-        options.Events = new ModelContextProtocol.AspNetCore.Authentication.McpAuthenticationEvents
-        {
-            OnResourceMetadataRequest = context =>
-            {
-                var baseUrl = $"{context.Request.Scheme}://{context.Request.Host}";
-                context.ResourceMetadata = new ModelContextProtocol.Authentication.ProtectedResourceMetadata
-                {
-                    Resource = $"{baseUrl}/mcp",
-                    AuthorizationServers = [baseUrl],
-                    BearerMethodsSupported = ["header"],
-                };
-                return Task.CompletedTask;
-            }
-        };
-    });
+    .AddScheme<AuthenticationSchemeOptions, McpTokenAuthenticationHandler>("McpToken", _ => { });
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("McpOAuth", policy =>
-        policy.AddAuthenticationSchemes(
-            JwtBearerDefaults.AuthenticationScheme,
-            ModelContextProtocol.AspNetCore.Authentication.McpAuthenticationDefaults.AuthenticationScheme)
-        .RequireAuthenticatedUser());
+    options.AddPolicy("McpBearer", policy =>
+        policy.AddAuthenticationSchemes("McpToken")
+              .RequireAuthenticatedUser());
 });
 
 builder.Services.AddControllers();
@@ -190,7 +171,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapMcp("/mcp").RequireAuthorization("McpOAuth");
+app.MapMcp("/mcp").RequireAuthorization("McpBearer");
 app.MapDefaultEndpoints();
 app.MapFallbackToFile("index.html");
 
