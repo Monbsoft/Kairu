@@ -27,7 +27,7 @@ public sealed class McpTokenConfiguration : IEntityTypeConfiguration<McpToken>
             .HasDatabaseName("IX_McpTokens_UserId");
 
         builder.Property(t => t.TokenHash)
-            .HasConversion(h => h.Value, v => McpTokenHash.Create(v).Value!)
+            .HasConversion(h => h.Value, v => McpTokenHash.Restore(v))
             .HasColumnType("nvarchar(64)")
             .HasMaxLength(64)
             .IsRequired();
@@ -43,5 +43,10 @@ public sealed class McpTokenConfiguration : IEntityTypeConfiguration<McpToken>
         builder.Property(t => t.CreatedAt)
             .HasColumnType("datetime2")
             .IsRequired();
+
+        builder.HasOne<User>()
+            .WithOne()
+            .HasForeignKey<McpToken>(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

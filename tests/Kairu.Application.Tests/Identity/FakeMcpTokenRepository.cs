@@ -23,4 +23,11 @@ internal sealed class FakeMcpTokenRepository : IMcpTokenRepository
         Tokens.RemoveAll(t => t.UserId == userId);
         return Task.CompletedTask;
     }
+
+    public Task ReplaceAsync(McpToken newToken, CancellationToken ct = default)
+    {
+        Tokens.RemoveAll(t => t.UserId == newToken.UserId);
+        Tokens.Add(newToken);
+        return Task.CompletedTask;
+    }
 }

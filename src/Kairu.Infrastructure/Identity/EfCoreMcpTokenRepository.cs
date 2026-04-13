@@ -35,4 +35,16 @@ internal sealed class EfCoreMcpTokenRepository : IMcpTokenRepository
             await _context.SaveChangesAsync(ct);
         }
     }
+
+    public async Task ReplaceAsync(McpToken newToken, CancellationToken ct = default)
+    {
+        var existing = await _context.McpTokens
+            .FirstOrDefaultAsync(t => t.UserId == newToken.UserId, ct);
+
+        if (existing is not null)
+            _context.McpTokens.Remove(existing);
+
+        await _context.McpTokens.AddAsync(newToken, ct);
+        await _context.SaveChangesAsync(ct);
+    }
 }

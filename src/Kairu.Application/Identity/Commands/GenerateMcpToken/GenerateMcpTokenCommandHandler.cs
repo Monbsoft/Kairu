@@ -37,19 +37,17 @@ public sealed class GenerateMcpTokenCommandHandler
     {
         _logger.LogDebug("Generating MCP token for user {UserId}", command.UserId);
 
-        // Step 1: revoke existing token if any
-        await _repository.DeleteByUserIdAsync(command.UserId, ct);
-
-        // Step 2 & 3: generate raw token and hash
+        // Step 1: generate raw token and hash
         var rawToken = _generator.Generate();
         var hash = _generator.Hash(rawToken);
 
-        // Step 4: create entity (1 year expiry)
+        // Step 2: create entity (1 year expiry)
         var now = DateTime.UtcNow;
         var expiresAt = now.AddYears(1);
         var token = McpToken.Create(command.UserId, hash, expiresAt, now);
 
-        await _repository.AddAsync(token, ct);
+        // Step 3: atomically replace any existing token (delete + insert in one SaveChangesAsync)
+        await _repository.ReplaceAsync(token, ct);
 
         _logger.LogInformation("MCP token {TokenId} generated for user {UserId}, expires {ExpiresAt}",
             token.Id, command.UserId, expiresAt);

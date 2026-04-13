@@ -42,7 +42,7 @@ public sealed class McpTokenAuthenticationHandler
         var rawToken = new McpRawToken(rawTokenValue);
         var query = new ValidateMcpTokenQuery(rawToken);
 
-        var result = await _mediator.SendAsync<ValidateMcpTokenQuery, Kairu.Domain.Common.Result<ValidateMcpTokenResult>>(query, CancellationToken.None);
+        var result = await _mediator.SendAsync<ValidateMcpTokenQuery, Kairu.Domain.Common.Result<ValidateMcpTokenResult>>(query, Context.RequestAborted);
 
         if (result.IsFailure)
         {

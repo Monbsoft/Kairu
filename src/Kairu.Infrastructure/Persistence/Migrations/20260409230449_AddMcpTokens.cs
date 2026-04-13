@@ -42,11 +42,7 @@ namespace Kairu.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Defensive drop: no-op if the table was already removed (partial rollback scenario).
-            migrationBuilder.Sql("""
-                IF OBJECT_ID(N'[McpTokens]', N'U') IS NOT NULL
-                    DROP TABLE [McpTokens];
-                """);
+            migrationBuilder.DropTable(name: "McpTokens");
         }
     }
 }

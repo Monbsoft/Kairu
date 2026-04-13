@@ -12,6 +12,9 @@ public sealed record McpTokenHash
 
     private McpTokenHash(string value) => Value = value;
 
+    /// <summary>Restores a hash from a trusted stored value (EF Core / DB) — bypasses validation.</summary>
+    public static McpTokenHash Restore(string storedValue) => new(storedValue);
+
     public static Result<McpTokenHash> Create(string sha256Hex)
     {
         if (string.IsNullOrWhiteSpace(sha256Hex))

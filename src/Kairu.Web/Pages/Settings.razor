@@ -58,6 +58,10 @@ else
             {
                 <p class="text-muted">Chargement du statut…</p>
             }
+            else if (_mcpLoadError)
+            {
+                <p class="text-danger mb-2">Impossible de charger le statut du token. Veuillez rafraîchir la page.</p>
+            }
             else if (_mcpHasToken)
             {
                 <p class="mb-2">
@@ -188,6 +192,7 @@ else
     // MCP Token state
     private bool _mcpLoading = true;
     private bool _mcpHasToken;
+    private bool _mcpLoadError;
     private DateTime? _mcpExpiresAt;
     private bool _mcpActionInProgress;
     private string? _mcpRawToken;
@@ -230,12 +235,16 @@ else
     private async Task LoadMcpStatusAsync()
     {
         _mcpLoading = true;
-        _mcpError = null;
+        _mcpLoadError = false;
         var status = await McpTokenApi.GetStatusAsync();
         if (status is not null)
         {
             _mcpHasToken = status.HasToken;
             _mcpExpiresAt = status.ExpiresAt;
+        }
+        else
+        {
+            _mcpLoadError = true;
         }
         _mcpLoading = false;
     }
@@ -272,8 +281,7 @@ else
         _mcpCopied = false;
         try
         {
-            // Revoke then generate
-            await McpTokenApi.RevokeAsync();
+            // The server atomically replaces any existing token — no client-side revoke needed
             var rawToken = await McpTokenApi.GenerateAsync();
             if (rawToken is not null)
             {
