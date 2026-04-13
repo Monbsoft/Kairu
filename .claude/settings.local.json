@@ -36,7 +36,10 @@
       "Bash(find /c/Users/oliver254/dev/Kairudev/src/Kairudev.Api -name *.g.cs)",
       "Bash(for f:*)",
       "Bash(do echo:*)",
-      "Read(//c/Users/oliver254/dev/Kairudev/**)"
+      "Read(//c/Users/oliver254/dev/Kairudev/**)",
+      "Bash(ls /c/Users/oliver254/dev/Kairudev/*.slnx /c/Users/oliver254/dev/Kairudev/*.sln)",
+      "Bash(ls /c/Users/oliver254/dev/Kairudev/*.slnx)",
+      "Bash(ls /c/Users/oliver254/dev/Kairudev/*.sln)"
     ]
   }
 }
