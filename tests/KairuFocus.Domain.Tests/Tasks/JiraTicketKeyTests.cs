@@ -7,7 +7,7 @@ public sealed class JiraTicketKeyTests
     [Theory]
     [InlineData("PROJ-123")]
     [InlineData("ABC-1")]
-    [InlineData("kairufocus-456")]
+    [InlineData("KAIRUFOCUS-456")]
     public void Should_CreateKey_When_ValueIsValid(string value)
     {
         var result = JiraTicketKey.Create(value);
