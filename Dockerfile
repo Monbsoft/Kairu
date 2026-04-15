@@ -21,7 +21,7 @@ WORKDIR /app
 
 COPY --from=build /app/api .
 
-ENV ASPNETCORE_URLS=http://+:8080
+ENV HTTP_PORTS=8080
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "KairuFocus.Api.dll"]

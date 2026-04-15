@@ -156,16 +156,17 @@ catch (Exception ex)
         throw;
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-} 
-else 
+if (!app.Environment.IsDevelopment())
 {
     app.UseForwardedHeaders(new ForwardedHeadersOptions
     {
         ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
     });
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
 }
 
 app.UseCors();
