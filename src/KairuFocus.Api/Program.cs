@@ -1,21 +1,22 @@
-using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
-using KairuFocus.Application.Common;
 using KairuFocus.Api.Auth;
 using KairuFocus.Api.Auth.Mcp;
 using KairuFocus.Api.Generated;
 using KairuFocus.Api.Mcp;
+using KairuFocus.Application.Common;
 using KairuFocus.Domain.Common;
 using KairuFocus.Infrastructure;
 using KairuFocus.Infrastructure.Persistence;
-using Monbsoft.BrilliantMediator.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.AspNetCore;
+using Monbsoft.BrilliantMediator.Extensions;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -158,6 +159,13 @@ catch (Exception ex)
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+} 
+else 
+{
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    });
 }
 
 app.UseCors();
