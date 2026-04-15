@@ -270,6 +270,74 @@ code {
     color: #adb5bd;
 }
 
+/* ── Landing — Why section ──────────────────────────────────────────── */
+.landing-why {
+    padding: 4rem 1rem;
+    background: #fff;
+}
+
+[data-bs-theme="dark"] .landing-why {
+    background: #0f0f23;
+}
+
+.landing-section-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.landing-section-desc {
+    text-align: center;
+    color: #6c757d;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+[data-bs-theme="dark"] .landing-section-desc {
+    color: #adb5bd;
+}
+
+.compare-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    border: 1px solid #e9ecef;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.compare-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+[data-bs-theme="dark"] .compare-card {
+    background: #16213e;
+    border-color: #334155;
+}
+
+.compare-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e94560;
+}
+
+.compare-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.compare-list li {
+    padding: 0.35rem 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
 /* ── Dashboard ─────────────────────────────────────────────────────────── */
 .dashboard-page {
     padding: 1.5rem;
