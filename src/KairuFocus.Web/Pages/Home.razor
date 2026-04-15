@@ -3,25 +3,24 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject IConfiguration Configuration
+@inject IStringLocalizer<Home> Loc
 
-<PageTitle>KairuFocus — Votre espace de travail développeur</PageTitle>
+<PageTitle>@Loc["PageTitle"]</PageTitle>
 
 <div class="landing">
     <section class="landing-hero">
         <div class="landing-hero-content">
             <div class="landing-logo">K</div>
             <h1 class="landing-title">KairuFocus</h1>
-            <p class="landing-tagline">L'espace de travail pour rester focus</p>
+            <p class="landing-tagline">@Loc["Tagline"]</p>
             <p class="landing-desc">
-                Tâches, sprints Pomodoro, journal d'activité — tout votre workflow
-                en un seul endroit. Connectez votre IA favorite via le protocole MCP
-                et laissez-la gérer vos tâches à votre place.
+                @Loc["Description"]
             </p>
             <a href="@_githubLoginUrl" class="btn btn-github btn-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="me-2" aria-hidden="true">
                     <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
                 </svg>
-                Se connecter avec GitHub
+                @Loc["LoginButton"]
             </a>
         </div>
     </section>
@@ -32,36 +31,34 @@
                 <div class="col-md-6 col-lg-3">
                     <div class="feature-card">
                         <div class="feature-icon">&#9745;</div>
-                        <h3 class="feature-title">Tâches</h3>
-                        <p class="feature-desc">Micro-tâches quotidiennes avec statuts, descriptions et édition Markdown.</p>
+                        <h3 class="feature-title">@Loc["FeatureTasks"]</h3>
+                        <p class="feature-desc">@Loc["FeatureTasksDesc"]</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
                     <div class="feature-card">
                         <div class="feature-icon">&#127813;</div>
-                        <h3 class="feature-title">Pomodoro</h3>
-                        <p class="feature-desc">Sprints et pauses chronométrés, suggestions intelligentes et lien avec vos tâches en cours.</p>
+                        <h3 class="feature-title">@Loc["FeaturePomodoro"]</h3>
+                        <p class="feature-desc">@Loc["FeaturePomodoroDesc"]</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
                     <div class="feature-card">
                         <div class="feature-icon">&#128214;</div>
-                        <h3 class="feature-title">Journal</h3>
-                        <p class="feature-desc">Timeline d'activité générée automatiquement. Annotez, naviguez dans l'historique.</p>
+                        <h3 class="feature-title">@Loc["FeatureJournal"]</h3>
+                        <p class="feature-desc">@Loc["FeatureJournalDesc"]</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
                     <div class="feature-card">
                         <div class="feature-icon">&#129302;</div>
-                        <h3 class="feature-title">IA & MCP</h3>
-                        <p class="feature-desc">Serveur MCP intégré : votre IA crée, liste et complète vos tâches directement.</p>
+                        <h3 class="feature-title">@Loc["FeatureAI"]</h3>
+                        <p class="feature-desc">@Loc["FeatureAIDesc"]</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-
-
 </div>
 
 @code {

@@ -33,6 +33,12 @@
     <script src="js/sw-registration.js"></script>
     <script src="js/sound.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script>
+      window.blazorCulture = {
+        get: () => window.localStorage['BlazorCulture'],
+        set: (value) => window.localStorage['BlazorCulture'] = value
+      };
+    </script>
 </body>
 
 </html>

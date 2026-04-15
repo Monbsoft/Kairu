@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+	<xsd:element name="root" msdata:IsDataSet="true">
+	  <xsd:complexType>
+		<xsd:choice maxOccurs="unbounded">
+		  <xsd:element name="metadata">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" use="required" type="xsd:string" />
+			  <xsd:attribute name="type" type="xsd:string" />
+			  <xsd:attribute name="mimetype" type="xsd:string" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="data">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+				<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+			  <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+			  <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="resheader">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" />
+			</xsd:complexType>
+		  </xsd:element>
+		</xsd:choice>
+	  </xsd:complexType>
+	</xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+	<value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+	<value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+	<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+	<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+	<value>KairuFocus — Tu espacio de trabajo para desarrolladores</value>
+  </data>
+  <data name="Tagline" xml:space="preserve">
+	<value>El espacio de trabajo para mantenerte enfocado</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+	<value>Tareas, sprints Pomodoro, diario de actividad — todo tu flujo de trabajo en un solo lugar. Conecta tu IA favorita a través del protocolo MCP y deja que gestione tus tareas por ti.</value>
+  </data>
+  <data name="LoginButton" xml:space="preserve">
+	<value>Iniciar sesión con GitHub</value>
+  </data>
+  <data name="FeatureTasks" xml:space="preserve">
+	<value>Tareas</value>
+  </data>
+  <data name="FeatureTasksDesc" xml:space="preserve">
+	<value>Micro-tareas diarias con estados, descripciones y edición Markdown.</value>
+  </data>
+  <data name="FeaturePomodoro" xml:space="preserve">
+	<value>Pomodoro</value>
+  </data>
+  <data name="FeaturePomodoroDesc" xml:space="preserve">
+	<value>Sprints y pausas cronometrados, sugerencias inteligentes y enlace con tus tareas actuales.</value>
+  </data>
+  <data name="FeatureJournal" xml:space="preserve">
+	<value>Diario</value>
+  </data>
+  <data name="FeatureJournalDesc" xml:space="preserve">
+	<value>Línea de tiempo de actividad generada automáticamente. Anota, navega por el historial.</value>
+  </data>
+  <data name="FeatureAI" xml:space="preserve">
+	<value>IA &amp; MCP</value>
+  </data>
+  <data name="FeatureAIDesc" xml:space="preserve">
+	<value>Servidor MCP integrado: tu IA crea, lista y completa tus tareas directamente.</value>
+  </data>
+</root>

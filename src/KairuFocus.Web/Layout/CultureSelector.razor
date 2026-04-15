@@ -1,0 +1,46 @@
+@using System.Globalization
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<div class="culture-selector">
+    <select class="form-select form-select-sm" @bind="selectedCulture" @bind:after="ApplySelectedCultureAsync">
+        @foreach (var culture in supportedCultures)
+        {
+            <option value="@culture.Key">@culture.Value</option>
+        }
+    </select>
+</div>
+
+@code
+{
+    private static readonly Dictionary<string, string> supportedCultures = new()
+    {
+        { "fr", "🇫🇷 Français" },
+        { "en", "🇬🇧 English" },
+        { "de", "🇩🇪 Deutsch" },
+        { "es", "🇪🇸 Español" },
+        { "pt", "🇧🇷 Português" },
+        { "it", "🇮🇹 Italiano" },
+        { "ru", "🇷🇺 Русский" },
+        { "ja", "🇯🇵 日本語" },
+        { "ko", "🇰🇷 한국어" },
+        { "zh", "🇨🇳 中文" }
+    };
+
+    private string? selectedCulture;
+
+    protected override void OnInitialized()
+    {
+        selectedCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    }
+
+    private async Task ApplySelectedCultureAsync()
+    {
+        if (selectedCulture is not null &&
+            CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != selectedCulture)
+        {
+            await JS.InvokeVoidAsync("blazorCulture.set", selectedCulture);
+            Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+        }
+    }
+}
