@@ -509,6 +509,14 @@ else
                 }
             }
             catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                await InvokeAsync(() =>
+                {
+                    _errorMessage = $"Erreur de fin de session : {ex.Message}";
+                    StateHasChanged();
+                });
+            }
         }, token);
     }
 

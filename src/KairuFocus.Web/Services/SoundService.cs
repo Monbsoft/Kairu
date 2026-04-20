@@ -23,6 +23,6 @@ public sealed class SoundService : ISoundService
 
         if (!SoundFiles.TryGetValue(ringtonePreference, out var soundFile)) return;
 
-        await _jsRuntime.InvokeVoidAsync("KairuFocusdevSound.play", soundFile);
+        await _jsRuntime.InvokeVoidAsync("kairufocusSound.play", soundFile);
     }
 }
