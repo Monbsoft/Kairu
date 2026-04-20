@@ -168,7 +168,7 @@ else
                         <option value="">— Lier une tâche existante —</option>
                         @foreach (var task in _unlinkableTasks)
                         {
-                            <option value="@task.Id">@task.Title</option>
+                            <option value="@task.Id">@FormatTaskOption(task)</option>
                         }
                     </select>
                     <button class="btn btn-sm btn-outline-secondary mt-1"
@@ -516,6 +516,11 @@ else
         if (idx >= 0) _allTasks[idx] = updated;
         RefreshLinkedTasks();
     }
+
+    private static string FormatTaskOption(TaskDto task) =>
+        task.Tags is { Count: > 0 }
+            ? $"[{task.Tags[0]}] {task.Title}"
+            : task.Title;
 
     private static string BadgeClass(string status) => status switch
     {
