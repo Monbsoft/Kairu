@@ -156,6 +156,11 @@ else
                                             ✓
                                         </button>
                                     }
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            title="Retirer du sprint"
+                                            @onclick="() => UnlinkTask(task.Id)">
+                                        ✕
+                                    </button>
                                 </span>
                             </li>
                         }
@@ -433,6 +438,16 @@ else
         var updated = await PomodoroApi.UpdateTaskStatusAsync(taskId, "InProgress");
         if (updated is null) { _errorMessage = "Impossible de mettre à jour le statut."; return; }
         UpdateLocalTask(updated);
+    }
+
+    private async Task UnlinkTask(Guid taskId)
+    {
+        _errorMessage = null;
+        var ok = await PomodoroApi.UnlinkTaskAsync(taskId);
+        if (!ok) { _errorMessage = "Impossible de retirer la tâche du sprint."; return; }
+
+        _session = await PomodoroApi.GetCurrentSessionAsync();
+        RefreshLinkedTasks();
     }
 
     private async Task CompleteLinkedTask(Guid taskId)

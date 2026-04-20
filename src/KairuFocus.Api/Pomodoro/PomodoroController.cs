@@ -2,6 +2,7 @@ using KairuFocus.Application.Pomodoro.Commands.CompleteSession;
 using KairuFocus.Application.Pomodoro.Commands.CreateTaskDuringSession;
 using KairuFocus.Application.Pomodoro.Commands.InterruptSession;
 using KairuFocus.Application.Pomodoro.Commands.LinkTask;
+using KairuFocus.Application.Pomodoro.Commands.UnlinkTask;
 using KairuFocus.Application.Pomodoro.Commands.SaveSettings;
 using KairuFocus.Application.Pomodoro.Commands.StartSession;
 using KairuFocus.Application.Pomodoro.Commands.UpdateTaskStatus;
@@ -127,6 +128,16 @@ public sealed class PomodoroController : ControllerBase
             { IsNotFound: true } => NotFound(),
             _ => BadRequest(new { error = result.Error })
         };
+    }
+
+    [HttpDelete("session/tasks/{id:guid}")]
+    public async Task<IActionResult> UnlinkTask(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.DispatchAsync<UnlinkTaskCommand, UnlinkTaskResult>(new UnlinkTaskCommand(id), ct);
+
+        return result.IsSuccess
+            ? NoContent()
+            : BadRequest(new { error = result.Error });
     }
 
     [HttpPost("session/tasks")]

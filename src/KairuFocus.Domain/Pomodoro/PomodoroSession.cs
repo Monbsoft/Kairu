@@ -92,4 +92,15 @@ public sealed class PomodoroSession : AggregateRoot<PomodoroSessionId>
         _linkedTaskIdValues.Add(taskId.Value);
         return Result.Success();
     }
+
+    public Result UnlinkTask(TaskId taskId)
+    {
+        if (Status != PomodoroSessionStatus.Active)
+            return Result.Failure(DomainErrors.Pomodoro.SessionNotActive);
+
+        if (!_linkedTaskIdValues.Remove(taskId.Value))
+            return Result.Failure(DomainErrors.Pomodoro.TaskNotLinked);
+
+        return Result.Success();
+    }
 }

@@ -204,4 +204,41 @@ public sealed class PomodoroSessionTests
         Assert.True(result.IsFailure);
         Assert.Equal(PomodoroErrors.Pomodoro.TaskLinkingNotAllowedForBreak, result.Error);
     }
+
+    // ── UnlinkTask ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Should_RemoveTask_When_UnlinkingLinkedTask()
+    {
+        var session = CreateActive();
+        var taskId = TaskId.New();
+        session.LinkTask(taskId);
+
+        var result = session.UnlinkTask(taskId);
+
+        Assert.True(result.IsSuccess);
+        Assert.DoesNotContain(taskId, session.LinkedTaskIds);
+    }
+
+    [Fact]
+    public void Should_ReturnFailure_When_UnlinkingUnknownTask()
+    {
+        var session = CreateActive();
+
+        var result = session.UnlinkTask(TaskId.New());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.TaskNotLinked, result.Error);
+    }
+
+    [Fact]
+    public void Should_ReturnFailure_When_UnlinkingOnNonActiveSession()
+    {
+        var session = CreatePlanned();
+
+        var result = session.UnlinkTask(TaskId.New());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.SessionNotActive, result.Error);
+    }
 }

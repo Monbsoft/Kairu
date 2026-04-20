@@ -91,6 +91,12 @@ public sealed class PomodoroApiClient
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool> UnlinkTaskAsync(Guid taskId)
+    {
+        var response = await _http.DeleteAsync($"api/pomodoro/session/tasks/{taskId}");
+        return response.IsSuccessStatusCode;
+    }
+
     public async Task<TaskDto?> CreateTaskDuringSessionAsync(string title)
     {
         var response = await _http.PostAsJsonAsync("api/pomodoro/session/tasks", new { Title = title });
