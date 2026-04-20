@@ -119,8 +119,8 @@ else
             </div>
         }
 
-        <!-- Tâches liées au sprint actif -->
-        @if (_session?.Status == "Active")
+        <!-- Tâches liées au sprint actif — masqué pendant une pause -->
+        @if (_session?.Status == "Active" && _session.SessionType == "Sprint")
         {
             <div style="width:100%;max-width:480px">
                 <h5 class="mb-2">Tâches du sprint</h5>
