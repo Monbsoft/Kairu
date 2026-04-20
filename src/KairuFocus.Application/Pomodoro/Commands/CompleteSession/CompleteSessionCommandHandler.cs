@@ -5,6 +5,7 @@ using KairuFocus.Domain.Pomodoro;
 using Microsoft.Extensions.Logging;
 using Monbsoft.BrilliantMediator.Abstractions;
 using Monbsoft.BrilliantMediator.Abstractions.Commands;
+using PomodoroErrors = KairuFocus.Domain.Pomodoro.DomainErrors;
 
 namespace KairuFocus.Application.Pomodoro.Commands.CompleteSession;
 
@@ -42,7 +43,7 @@ public sealed class CompleteSessionCommandHandler : ICommandHandler<CompleteSess
         if (session is null)
         {
             _logger.LogWarning("No active session found for user {UserId}", userId);
-            return CompleteSessionResult.Failure("No active session");
+            return CompleteSessionResult.Failure(PomodoroErrors.Pomodoro.NoActiveSession);
         }
 
         var result = session.Complete(DateTime.UtcNow);

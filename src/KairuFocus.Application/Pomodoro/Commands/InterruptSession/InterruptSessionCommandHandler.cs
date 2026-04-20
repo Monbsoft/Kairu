@@ -5,6 +5,7 @@ using KairuFocus.Domain.Pomodoro;
 using Microsoft.Extensions.Logging;
 using Monbsoft.BrilliantMediator.Abstractions;
 using Monbsoft.BrilliantMediator.Abstractions.Commands;
+using PomodoroErrors = KairuFocus.Domain.Pomodoro.DomainErrors;
 
 namespace KairuFocus.Application.Pomodoro.Commands.InterruptSession;
 
@@ -39,7 +40,7 @@ public sealed class InterruptSessionCommandHandler : ICommandHandler<InterruptSe
         if (session is null)
         {
             _logger.LogWarning("No active session found for user {UserId}", userId);
-            return InterruptSessionResult.Failure("No active session");
+            return InterruptSessionResult.Failure(PomodoroErrors.Pomodoro.NoActiveSession);
         }
 
         var result = session.Interrupt(DateTime.UtcNow);

@@ -2,6 +2,7 @@ using KairuFocus.Application.Pomodoro.Commands.CompleteSession;
 using KairuFocus.Application.Pomodoro.Commands.CreateTaskDuringSession;
 using KairuFocus.Application.Pomodoro.Commands.InterruptSession;
 using KairuFocus.Application.Pomodoro.Commands.LinkTask;
+using KairuFocus.Application.Pomodoro.Commands.UnlinkTask;
 using KairuFocus.Application.Pomodoro.Commands.SaveSettings;
 using KairuFocus.Application.Pomodoro.Commands.StartSession;
 using KairuFocus.Application.Pomodoro.Commands.UpdateTaskStatus;
@@ -12,6 +13,7 @@ using KairuFocus.Application.Pomodoro.Queries.GetTodaySprintSessions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Monbsoft.BrilliantMediator.Abstractions;
+using PomodoroErrors = KairuFocus.Domain.Pomodoro.DomainErrors;
 
 namespace KairuFocus.Api.Pomodoro;
 
@@ -125,6 +127,20 @@ public sealed class PomodoroController : ControllerBase
         {
             { IsSuccess: true } => NoContent(),
             { IsNotFound: true } => NotFound(),
+            _ => BadRequest(new { error = result.Error })
+        };
+    }
+
+    [HttpDelete("session/tasks/{id:guid}")]
+    public async Task<IActionResult> UnlinkTask(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.DispatchAsync<UnlinkTaskCommand, UnlinkTaskResult>(new UnlinkTaskCommand(id), ct);
+
+        return result switch
+        {
+            { IsSuccess: true } => NoContent(),
+            { IsNotFound: true } => NotFound(),
+            _ when result.Error == PomodoroErrors.Pomodoro.NoActiveSession => Conflict(new { error = result.Error }),
             _ => BadRequest(new { error = result.Error })
         };
     }

@@ -169,4 +169,90 @@ public sealed class PomodoroSessionTests
 
         Assert.Equal(2, session.LinkedTaskIds.Count);
     }
+
+    [Fact]
+    public void Should_ReturnFailure_When_LinkingTaskOnPlannedSession()
+    {
+        var session = CreatePlanned();
+
+        var result = session.LinkTask(TaskId.New());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.SessionNotActive, result.Error);
+    }
+
+    [Fact]
+    public void Should_ReturnFailure_When_LinkingTaskOnShortBreakSession()
+    {
+        var session = PomodoroSession.Create(PomodoroSessionType.ShortBreak, 5, OwnerId);
+        session.Start(Now);
+
+        var result = session.LinkTask(TaskId.New());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.TaskLinkingNotAllowedForBreak, result.Error);
+    }
+
+    [Fact]
+    public void Should_ReturnFailure_When_LinkingTaskOnLongBreakSession()
+    {
+        var session = PomodoroSession.Create(PomodoroSessionType.LongBreak, 15, OwnerId);
+        session.Start(Now);
+
+        var result = session.LinkTask(TaskId.New());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.TaskLinkingNotAllowedForBreak, result.Error);
+    }
+
+    // ── UnlinkTask ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Should_RemoveTask_When_UnlinkingLinkedTask()
+    {
+        var session = CreateActive();
+        var taskId = TaskId.New();
+        session.LinkTask(taskId);
+
+        var result = session.UnlinkTask(taskId);
+
+        Assert.True(result.IsSuccess);
+        Assert.DoesNotContain(taskId, session.LinkedTaskIds);
+    }
+
+    [Fact]
+    public void Should_ReturnFailure_When_UnlinkingUnknownTask()
+    {
+        var session = CreateActive();
+
+        var result = session.UnlinkTask(TaskId.New());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.TaskNotLinked, result.Error);
+    }
+
+    [Fact]
+    public void Should_ReturnFailure_When_UnlinkingOnNonActiveSession()
+    {
+        var session = CreatePlanned();
+
+        var result = session.UnlinkTask(TaskId.New());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.SessionNotActive, result.Error);
+    }
+
+    [Fact]
+    public void Should_ReturnFailure_When_UnlinkingOnCompletedSession()
+    {
+        var session = CreateActive();
+        var taskId = TaskId.New();
+        session.LinkTask(taskId);
+        session.Complete(Now.AddMinutes(25));
+
+        var result = session.UnlinkTask(taskId);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(PomodoroErrors.Pomodoro.SessionNotActive, result.Error);
+    }
 }

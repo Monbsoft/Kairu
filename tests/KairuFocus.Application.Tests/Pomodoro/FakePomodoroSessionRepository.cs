@@ -6,6 +6,7 @@ namespace KairuFocus.Application.Tests.Pomodoro;
 internal sealed class FakePomodoroSessionRepository : IPomodoroSessionRepository
 {
     public List<PomodoroSession> Sessions { get; } = [];
+    public int UpdateAsyncCallCount { get; private set; }
 
     public Task AddAsync(PomodoroSession session, CancellationToken cancellationToken = default)
     {
@@ -25,8 +26,11 @@ internal sealed class FakePomodoroSessionRepository : IPomodoroSessionRepository
     public Task<PomodoroSession?> GetActiveAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Sessions.FirstOrDefault(s => s.OwnerId == userId && s.Status == PomodoroSessionStatus.Active));
 
-    public Task UpdateAsync(PomodoroSession session, CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
+    public Task UpdateAsync(PomodoroSession session, CancellationToken cancellationToken = default)
+    {
+        UpdateAsyncCallCount++;
+        return Task.CompletedTask;
+    }
 
     public Task<int> GetCompletedTodayCountAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Sessions.Count(s => s.OwnerId == userId && s.Status == PomodoroSessionStatus.Completed));

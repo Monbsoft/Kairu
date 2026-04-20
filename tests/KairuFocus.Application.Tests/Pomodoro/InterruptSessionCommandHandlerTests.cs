@@ -5,6 +5,7 @@ using KairuFocus.Domain.Identity;
 using KairuFocus.Domain.Journal;
 using KairuFocus.Domain.Pomodoro;
 using Microsoft.Extensions.Logging.Abstractions;
+using PomodoroErrors = KairuFocus.Domain.Pomodoro.DomainErrors;
 
 namespace KairuFocus.Application.Tests.Pomodoro;
 
@@ -38,7 +39,7 @@ public sealed class InterruptSessionCommandHandlerTests
         var result = await _sut.Handle(new InterruptSessionCommand());
 
         Assert.False(result.IsSuccess);
-        Assert.Equal("No active session", result.Error);
+        Assert.Equal(PomodoroErrors.Pomodoro.NoActiveSession, result.Error);
     }
 
     [Fact]

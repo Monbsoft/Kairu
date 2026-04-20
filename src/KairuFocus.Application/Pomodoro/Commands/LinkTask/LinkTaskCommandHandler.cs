@@ -3,6 +3,7 @@ using KairuFocus.Domain.Pomodoro;
 using KairuFocus.Domain.Tasks;
 using Microsoft.Extensions.Logging;
 using Monbsoft.BrilliantMediator.Abstractions.Commands;
+using PomodoroErrors = KairuFocus.Domain.Pomodoro.DomainErrors;
 
 namespace KairuFocus.Application.Pomodoro.Commands.LinkTask;
 
@@ -37,7 +38,7 @@ public sealed class LinkTaskCommandHandler : ICommandHandler<LinkTaskCommand, Li
         if (session is null)
         {
             _logger.LogWarning("No active session found for user {UserId}", userId);
-            return LinkTaskResult.Failure("No active session");
+            return LinkTaskResult.Failure(PomodoroErrors.Pomodoro.NoActiveSession);
         }
 
         var task = await _taskRepository.GetByIdAsync(TaskId.From(command.TaskId), userId, cancellationToken);

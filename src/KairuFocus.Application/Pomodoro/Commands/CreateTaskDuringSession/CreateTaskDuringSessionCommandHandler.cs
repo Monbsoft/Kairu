@@ -4,6 +4,7 @@ using KairuFocus.Domain.Pomodoro;
 using KairuFocus.Domain.Tasks;
 using Microsoft.Extensions.Logging;
 using Monbsoft.BrilliantMediator.Abstractions.Commands;
+using PomodoroErrors = KairuFocus.Domain.Pomodoro.DomainErrors;
 
 namespace KairuFocus.Application.Pomodoro.Commands.CreateTaskDuringSession;
 
@@ -38,7 +39,13 @@ public sealed class CreateTaskDuringSessionCommandHandler : ICommandHandler<Crea
         if (session is null)
         {
             _logger.LogWarning("No active session found for user {UserId}", userId);
-            return CreateTaskDuringSessionResult.Failure("No active session");
+            return CreateTaskDuringSessionResult.Failure(PomodoroErrors.Pomodoro.NoActiveSession);
+        }
+
+        if (session.SessionType != PomodoroSessionType.Sprint)
+        {
+            _logger.LogWarning("Cannot create task during non-sprint session for user {UserId}", userId);
+            return CreateTaskDuringSessionResult.Failure(PomodoroErrors.Pomodoro.TaskLinkingNotAllowedForBreak);
         }
 
         var titleResult = TaskTitle.Create(command.Title);

@@ -119,8 +119,8 @@ else
             </div>
         }
 
-        <!-- Tâches liées au sprint actif -->
-        @if (_session?.Status == "Active")
+        <!-- Tâches liées au sprint actif — masqué pendant une pause -->
+        @if (_session?.Status == "Active" && _session.SessionType == "Sprint")
         {
             <div style="width:100%;max-width:480px">
                 <h5 class="mb-2">Tâches du sprint</h5>
@@ -131,14 +131,22 @@ else
                         @foreach (var task in _linkedTasks)
                         {
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span class="@(task.Status == "Done" ? "text-decoration-line-through text-muted" : "")">
-                                    @task.Title
+                                <span class="d-flex gap-2 align-items-center">
+                                    <span class="@(task.Status == "Done" ? "text-decoration-line-through text-muted" : "")">
+                                        @task.Title
+                                    </span>
+                                    @if (task.Tags is { Count: > 0 })
+                                    {
+                                        <span class="badge bg-light text-dark border">@task.Tags[0]</span>
+                                    }
                                 </span>
                                 <span class="d-flex gap-2 align-items-center">
                                     <span class="badge @BadgeClass(task.Status)">@task.Status</span>
                                     @if (task.Status == "Todo")
                                     {
                                         <button class="btn btn-sm btn-outline-primary"
+                                                title="Marquer @task.Title en cours"
+                                                aria-label="Marquer la tâche @task.Title comme en cours"
                                                 @onclick="() => SetTaskInProgress(task.Id)">
                                             En cours
                                         </button>
@@ -146,10 +154,18 @@ else
                                     @if (task.Status != "Done")
                                     {
                                         <button class="btn btn-sm btn-success"
+                                                title="Terminer @task.Title"
+                                                aria-label="Terminer la tâche @task.Title"
                                                 @onclick="() => CompleteLinkedTask(task.Id)">
                                             ✓
                                         </button>
                                     }
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            title="Retirer @task.Title du sprint"
+                                            aria-label="Retirer la tâche @task.Title du sprint"
+                                            @onclick="() => UnlinkTask(task.Id)">
+                                        ✕
+                                    </button>
                                 </span>
                             </li>
                         }
@@ -160,9 +176,9 @@ else
                 <div class="mb-2">
                     <select class="form-select form-select-sm" @bind="_selectedTaskIdToLink">
                         <option value="">— Lier une tâche existante —</option>
-                        @foreach (var task in _unlinkableTasks)
+                        @foreach (var task in GetLinkableTasks())
                         {
-                            <option value="@task.Id">@task.Title</option>
+                            <option value="@task.Id">@FormatTaskOption(task)</option>
                         }
                     </select>
                     <button class="btn btn-sm btn-outline-secondary mt-1"
@@ -279,7 +295,7 @@ else
         }
     }
 
-    private IEnumerable<TaskDto> _unlinkableTasks =>
+    private IEnumerable<TaskDto> GetLinkableTasks() =>
         _allTasks.Where(t =>
             t.Status != "Done" &&
             (_session is null || !_session.LinkedTaskIds.Contains(t.Id)));
@@ -429,6 +445,16 @@ else
         UpdateLocalTask(updated);
     }
 
+    private async Task UnlinkTask(Guid taskId)
+    {
+        _errorMessage = null;
+        var ok = await PomodoroApi.UnlinkTaskAsync(taskId);
+        if (!ok) { _errorMessage = "Impossible de retirer la tâche du sprint."; return; }
+
+        _session = await PomodoroApi.GetCurrentSessionAsync();
+        RefreshLinkedTasks();
+    }
+
     private async Task CompleteLinkedTask(Guid taskId)
     {
         _errorMessage = null;
@@ -510,6 +536,11 @@ else
         if (idx >= 0) _allTasks[idx] = updated;
         RefreshLinkedTasks();
     }
+
+    private static string FormatTaskOption(TaskDto task) =>
+        task.Tags is { Count: > 0 }
+            ? $"[{task.Tags[0]}] {task.Title}"
+            : task.Title;
 
     private static string BadgeClass(string status) => status switch
     {

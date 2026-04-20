@@ -4,6 +4,7 @@ using KairuFocus.Domain.Pomodoro;
 using KairuFocus.Domain.Tasks;
 using Microsoft.Extensions.Logging;
 using Monbsoft.BrilliantMediator.Abstractions.Commands;
+using PomodoroErrors = KairuFocus.Domain.Pomodoro.DomainErrors;
 using TaskStatus = KairuFocus.Domain.Tasks.TaskStatus;
 
 namespace KairuFocus.Application.Pomodoro.Commands.UpdateTaskStatus;
@@ -39,7 +40,7 @@ public sealed class UpdateTaskStatusCommandHandler : ICommandHandler<UpdateTaskS
         if (session is null)
         {
             _logger.LogWarning("No active session found for user {UserId}", userId);
-            return UpdateTaskStatusResult.Failure("No active session");
+            return UpdateTaskStatusResult.Failure(PomodoroErrors.Pomodoro.NoActiveSession);
         }
 
         var task = await _taskRepository.GetByIdAsync(TaskId.From(command.TaskId), userId, cancellationToken);
