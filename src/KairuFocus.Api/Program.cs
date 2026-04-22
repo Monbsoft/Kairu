@@ -1,3 +1,4 @@
+using Azure.Identity;
 using KairuFocus.Api.Auth;
 using KairuFocus.Api.Auth.Mcp;
 using KairuFocus.Api.Generated;
@@ -9,6 +10,7 @@ using KairuFocus.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -23,13 +25,39 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // Get connection string: prioritize SQL_CONNECTION_STRING (Azure/production),
-// then appsettings ConnectionStrings:Default (development)
+// then appsettings ConnectionStrings:Default (development).
+// En env Testing, une chaîne fictive est acceptée : le DbContext sera remplacé par InMemory dans WebApplicationFactory.
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING")
-    ?? throw new InvalidOperationException(
-        "A SQL Server connection string must be configured via 'ConnectionStrings:Default' or the 'SQL_CONNECTION_STRING' environment variable.");
+    ?? (builder.Environment.IsEnvironment("Testing")
+        ? "Server=(localdb)\\mssqllocaldb;Database=KairuFocus_Testing;Trusted_Connection=True;"
+        : throw new InvalidOperationException(
+            "A SQL Server connection string must be configured via 'ConnectionStrings:Default' or the 'SQL_CONNECTION_STRING' environment variable."));
 
 builder.Services.AddInfrastructure(connectionString);
+
+// Data Protection — clés partagées et persistées.
+// En prod : Blob Storage (key ring) + Key Vault (chiffrement au repos).
+// En dev : filesystem local implicite (~/.aspnet/DataProtection-Keys), acceptable localement.
+var dpBuilder = builder.Services.AddDataProtection()
+    .SetApplicationName("KairuFocus");
+
+var dpBlobUri = builder.Configuration["DataProtection:BlobUri"];
+var dpKeyVaultKeyUri = builder.Configuration["DataProtection:KeyVaultKeyUri"];
+
+if (!string.IsNullOrEmpty(dpBlobUri) && !string.IsNullOrEmpty(dpKeyVaultKeyUri))
+{
+    var credential = new DefaultAzureCredential();
+    dpBuilder
+        .PersistKeysToAzureBlobStorage(new Uri(dpBlobUri), credential)
+        .ProtectKeysWithAzureKeyVault(new Uri(dpKeyVaultKeyUri), credential);
+}
+else if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
+{
+    throw new InvalidOperationException(
+        "DataProtection:BlobUri and DataProtection:KeyVaultKeyUri must be configured in production (non-Development environment).");
+}
+// Sinon (dev ou Testing sans config Azure) : PersistKeysToFileSystem implicite, acceptable localement.
 
 // BrilliantMediator — handlers auto-découverts par le source generator
 builder.Services.AddBrilliantMediator()
@@ -46,13 +74,16 @@ builder.Services.AddScoped<ICurrentUserService, ClaimsCurrentUserService>();
 builder.Services.AddSingleton<KairuFocus.Api.Auth.JwtTokenService>();
 
 // Authentication — JWT Bearer + GitHub OAuth
+// En env Testing, une clé fictive est utilisée (les tests n'émettent pas de vrais JWT).
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
-    ?? throw new InvalidOperationException("Jwt:SecretKey must be configured in appsettings or user secrets.");
+    ?? (builder.Environment.IsEnvironment("Testing")
+        ? "testing-secret-key-minimum-32-chars-for-hmac"
+        : throw new InvalidOperationException("Jwt:SecretKey must be configured in appsettings or user secrets."));
 
 var gitHubClientId = builder.Configuration["GitHub:ClientId"] ?? string.Empty;
 var gitHubClientSecret = builder.Configuration["GitHub:ClientSecret"] ?? string.Empty;
 
-if (!builder.Environment.IsDevelopment())
+if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
 {
     if (string.IsNullOrEmpty(gitHubClientId))
         throw new InvalidOperationException("GitHub:ClientId must be configured in appsettings or user secrets.");
@@ -138,9 +169,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Apply database migrations — the app cannot start without a valid schema
-using (var scope = app.Services.CreateScope())
+// Apply database migrations — skipped in Testing environment (in-memory DB used by integration tests).
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<KairuFocusDbContext>();
     Console.WriteLine("Applying database migrations...");
     await db.Database.MigrateAsync();
