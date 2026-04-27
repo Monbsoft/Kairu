@@ -59,7 +59,7 @@ public sealed class AuthController : ControllerBase
         if (!result.Succeeded)
         {
             _logger.LogWarning("GitHub authentication failed: {Error}", result.Failure?.Message);
-            return Redirect($"{webBase}/login#auth-error=denied");
+            return await RedirectWithErrorAsync(webBase, "denied");
         }
 
         var githubId = result.Principal!.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -69,7 +69,7 @@ public sealed class AuthController : ControllerBase
         var email = result.Principal.FindFirst(ClaimTypes.Email)?.Value;
 
         if (string.IsNullOrEmpty(githubId))
-            return Redirect($"{webBase}/login#auth-error=no-id");
+            return await RedirectWithErrorAsync(webBase, "no-id");
 
         var command = new GetOrCreateUserCommand(githubId, login, displayName, email);
         var userResult = await _mediator.DispatchAsync<GetOrCreateUserCommand, Result<GetOrCreateUserResult>>(command, ct);
@@ -77,7 +77,7 @@ public sealed class AuthController : ControllerBase
         if (userResult.IsFailure)
         {
             _logger.LogError("Failed to get or create user: {Error}", userResult.Error);
-            return Redirect($"{webBase}/login#auth-error=server");
+            return await RedirectWithErrorAsync(webBase, "server");
         }
 
         var token = _jwtTokenService.GenerateToken(userResult.Value);
@@ -93,6 +93,23 @@ public sealed class AuthController : ControllerBase
         }
 
         return Redirect($"{webBase}/login#token={Uri.EscapeDataString(token)}");
+    }
+
+    [HttpPost("logout")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return NoContent();
+    }
+
+    // Nettoie le cookie OAuth avant de rediriger vers la page d'erreur,
+    // pour éviter qu'un cookie invalide/partiellement déchiffré
+    // bloque toute reconnexion ultérieure.
+    private async Task<IActionResult> RedirectWithErrorAsync(string webBase, string errorCode)
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return Redirect($"{webBase}/login#auth-error={errorCode}");
     }
 
     [HttpGet("me")]
