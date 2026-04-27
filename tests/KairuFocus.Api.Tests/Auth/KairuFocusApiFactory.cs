@@ -9,40 +9,53 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace KairuFocus.Api.Tests.Auth;
 
 /// <summary>
-/// WebApplicationFactory configurée pour les tests d'intégration.
-/// - Utilise l'environnement "Testing" pour désactiver la migration SQL et les validations prod.
-/// - Remplace KairuFocusDbContext (SQL Server) par un provider InMemory.
+/// WebApplicationFactory configured for integration tests.
+/// - Uses "Testing" environment to disable SQL migration and prod validations.
+/// - Replaces KairuFocusDbContext (SQL Server) with an InMemory provider.
+/// - Accepts an optional <see cref="ConfigureTestServices"/> action to allow
+///   per-test service overrides (e.g., replacing authentication handlers or the mediator).
 /// </summary>
 public sealed class KairuFocusApiFactory : WebApplicationFactory<Program>
 {
+    /// <summary>
+    /// Optional additional service configuration applied after the base setup.
+    /// Used by tests that need to override specific services (e.g., Cookie auth handler, IMediator).
+    /// </summary>
+    public Action<IServiceCollection>? ConfigureTestServices { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // Environnement "Testing" : désactive la migration EF, la validation
-        // des secrets GitHub et le fallback Data Protection prod.
+        // "Testing" environment: disables EF migration, GitHub secret validation,
+        // and prod Data Protection fallback.
         builder.UseEnvironment("Testing");
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
-            // Configuration minimale pour les tests — pas de secrets réels nécessaires.
+            // Minimal configuration for tests — no real secrets needed.
             var testConfig = new Dictionary<string, string?>
             {
                 ["WebBaseUrl"] = "http://localhost",
                 ["AllowedCallbackUrls:0"] = "http://localhost/callback",
-                // GitHub vides — pas testés ici, le check est conditionné sur !Testing.
+                // GitHub placeholders — not validated in Testing env.
                 ["GitHub:ClientId"] = "test-client-id",
                 ["GitHub:ClientSecret"] = "test-client-secret",
+                // JWT key used by JwtTokenService to generate tokens in tests.
+                ["Jwt:SecretKey"] = "testing-secret-key-minimum-32-chars-for-hmac",
             };
             config.AddInMemoryCollection(testConfig);
         });
 
         builder.ConfigureServices(services =>
         {
-            // Remplacer le DbContext SQL Server par InMemory pour les tests.
+            // Replace SQL Server DbContext with InMemory for tests.
             services.RemoveAll<DbContextOptions<KairuFocusDbContext>>();
             services.RemoveAll<KairuFocusDbContext>();
 
             services.AddDbContext<KairuFocusDbContext>(options =>
                 options.UseInMemoryDatabase("KairuFocusTests_" + Guid.NewGuid()));
+
+            // Apply per-test overrides (e.g., auth handler replacement, mediator stub).
+            ConfigureTestServices?.Invoke(services);
         });
     }
 }
