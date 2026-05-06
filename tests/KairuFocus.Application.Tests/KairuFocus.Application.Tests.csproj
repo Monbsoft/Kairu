@@ -30,21 +30,4 @@
     <ProjectReference Include="..\..\src\KairuFocus.Infrastructure\KairuFocus.Infrastructure.csproj" />
   </ItemGroup>
 
-  <!-- Exclude non-migrated tests (still using old Interactor/Presenter architecture) -->
-  <ItemGroup>
-    <Compile Remove="Tasks\UpdateTaskInteractorTests.cs" />
-    <Compile Remove="Tasks\DeleteTaskInteractorTests.cs" />
-    <Compile Remove="Tasks\ChangeTaskStatusInteractorTests.cs" />
-    <Compile Remove="Tasks\CompleteTaskCommandHandlerTests.cs" />
-    <Compile Remove="Pomodoro\SaveSettingsInteractorTests.cs" />
-    <Compile Remove="Pomodoro\StartSessionInteractorTests.cs" />
-    <Compile Remove="Pomodoro\CompleteSessionInteractorTests.cs" />
-    <Compile Remove="Pomodoro\InterruptSessionInteractorTests.cs" />
-    <Compile Remove="Journal\GetTodayJournalInteractorTests.cs" />
-    <Compile Remove="Journal\CreateJournalEntryInteractorTests.cs" />
-    <Compile Remove="Journal\AddJournalCommentInteractorTests.cs" />
-    <Compile Remove="Journal\UpdateJournalCommentInteractorTests.cs" />
-    <Compile Remove="Journal\RemoveJournalCommentInteractorTests.cs" />
-  </ItemGroup>
-
 </Project>
