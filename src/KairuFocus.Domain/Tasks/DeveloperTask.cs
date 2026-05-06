@@ -60,15 +60,6 @@ public sealed class DeveloperTask : AggregateRoot<TaskId>
         return Result.Success();
     }
 
-    public Result StartProgress()
-    {
-        if (Status == TaskStatus.Done)
-            return Result.Failure(DomainErrors.Tasks.AlreadyCompleted);
-
-        Status = TaskStatus.InProgress;
-        return Result.Success();
-    }
-
     public Result ChangeStatus(TaskStatus newStatus, DateTime now)
     {
         if (Status == newStatus)
