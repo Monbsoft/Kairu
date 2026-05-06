@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "src/KairuFocus.AppHost/KairuFocus.AppHost.csproj"
+  }
+}

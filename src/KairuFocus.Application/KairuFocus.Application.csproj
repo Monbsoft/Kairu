@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="BrilliantMediator" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-preview.3.26207.106" />
   </ItemGroup>
 
 
