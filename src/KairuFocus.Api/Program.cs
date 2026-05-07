@@ -55,12 +55,26 @@ if (!string.IsNullOrEmpty(dpBlobUri) && !string.IsNullOrEmpty(dpKeyVaultKeyUri))
     // En prod : utiliser explicitement la UAMI via AZURE_CLIENT_ID injecté par le Container App.
     // ManagedIdentityCredential explicite évite la cascade de tentatives de DefaultAzureCredential
     // (env, VS, Azure CLI, etc.) — démarrage plus rapide et erreurs plus claires.
-    // Fallback DefaultAzureCredential pour les scénarios dev avec Azure CLI/VS.
+    // Fail-fast hors Development si AZURE_CLIENT_ID manque : un fallback silencieux annulerait
+    // le bénéfice du fix et masquerait une régression de configuration Bicep.
     var azureClientId = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID")
         ?? builder.Configuration["Azure:ManagedIdentityClientId"];
-    TokenCredential credential = !string.IsNullOrEmpty(azureClientId)
-        ? new ManagedIdentityCredential(azureClientId)
-        : new DefaultAzureCredential();
+    TokenCredential credential;
+    if (!string.IsNullOrEmpty(azureClientId))
+    {
+        credential = new ManagedIdentityCredential(azureClientId);
+    }
+    else if (builder.Environment.IsDevelopment())
+    {
+        // Dev seulement : fallback Azure CLI / VS / etc. pour permettre le test local
+        // d'une intégration DataProtection cloud sans Managed Identity.
+        credential = new DefaultAzureCredential();
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            "AZURE_CLIENT_ID environment variable (or Azure:ManagedIdentityClientId config) is required when DataProtection:BlobUri and DataProtection:KeyVaultKeyUri are configured outside Development.");
+    }
     dpBuilder
         .PersistKeysToAzureBlobStorage(new Uri(dpBlobUri), credential)
         .ProtectKeysWithAzureKeyVault(new Uri(dpKeyVaultKeyUri), credential);

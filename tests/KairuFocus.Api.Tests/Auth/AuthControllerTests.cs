@@ -160,6 +160,13 @@ public sealed class AuthControllerTests : IClassFixture<KairuFocusApiFactory>
 
         Assert.True(hasCorrelationDelete,
             $"Expected Set-Cookie deleting .AspNetCore.Correlation.GitHub.abc123. Got: {string.Join(" | ", setCookieHeaders)}");
+
+        // Vérifie que le Set-Cookie d'effacement a bien path=/ — sinon le navigateur
+        // ne fait pas la correspondance avec le cookie original (posé par
+        // CorrelationCookieBuilder à PathBase ou "/" si pas de PathBase).
+        var correlationDeleteHeader = setCookieHeaders.First(c =>
+            c.Contains(".AspNetCore.Correlation.GitHub.abc123", StringComparison.Ordinal));
+        Assert.Contains("path=/", correlationDeleteHeader, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string GenerateTestJwt()
