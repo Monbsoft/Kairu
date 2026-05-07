@@ -88,7 +88,7 @@ public sealed class CompleteTaskCommandHandlerTests
             TaskTitle.Create("Task to complete").Value,
             null,
             DateTime.UtcNow,
-            UserId.From("test-github-id-123"));
+            FakeCurrentUserService.TestUserId);
         _repository.Tasks.Add(task);
         return task;
     }

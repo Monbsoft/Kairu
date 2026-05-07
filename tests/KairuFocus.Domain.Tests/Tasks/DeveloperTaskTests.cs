@@ -45,29 +45,6 @@ public sealed class DeveloperTaskTests
     }
 
     [Fact]
-    public void Should_BeInProgressStatus_When_StartProgressCalled()
-    {
-        var task = CreateValidTask();
-
-        var result = task.StartProgress();
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(DomainTaskStatus.InProgress, task.Status);
-    }
-
-    [Fact]
-    public void Should_ReturnFailure_When_StartingProgressOnCompletedTask()
-    {
-        var task = CreateValidTask();
-        task.Complete();
-
-        var result = task.StartProgress();
-
-        Assert.True(result.IsFailure);
-        Assert.Equal(DomainErrors.Tasks.AlreadyCompleted, result.Error);
-    }
-
-    [Fact]
     public void Should_HaveUniqueId_When_TwoTasksCreated()
     {
         var task1 = CreateValidTask();

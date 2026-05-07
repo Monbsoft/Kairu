@@ -1,3 +1,4 @@
+using Azure.Core;
 using Azure.Identity;
 using KairuFocus.Api.Auth;
 using KairuFocus.Api.Auth.Mcp;
@@ -24,12 +25,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+// Testing environment: disables SQL migration, prod-only validations, and prod Data Protection guard.
+// Real configuration (JWT key, GitHub secrets, etc.) is injected by KairuFocusApiFactory.
+var isTesting = builder.Environment.IsEnvironment("Testing");
+
 // Get connection string: prioritize SQL_CONNECTION_STRING (Azure/production),
 // then appsettings ConnectionStrings:Default (development).
 // En env Testing, une chaîne fictive est acceptée : le DbContext sera remplacé par InMemory dans WebApplicationFactory.
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING")
-    ?? (builder.Environment.IsEnvironment("Testing")
+    ?? (isTesting
         ? "Server=(localdb)\\mssqllocaldb;Database=KairuFocus_Testing;Trusted_Connection=True;"
         : throw new InvalidOperationException(
             "A SQL Server connection string must be configured via 'ConnectionStrings:Default' or the 'SQL_CONNECTION_STRING' environment variable."));
@@ -47,12 +52,34 @@ var dpKeyVaultKeyUri = builder.Configuration["DataProtection:KeyVaultKeyUri"];
 
 if (!string.IsNullOrEmpty(dpBlobUri) && !string.IsNullOrEmpty(dpKeyVaultKeyUri))
 {
-    var credential = new DefaultAzureCredential();
+    // En prod : utiliser explicitement la UAMI via AZURE_CLIENT_ID injecté par le Container App.
+    // ManagedIdentityCredential explicite évite la cascade de tentatives de DefaultAzureCredential
+    // (env, VS, Azure CLI, etc.) — démarrage plus rapide et erreurs plus claires.
+    // Fail-fast hors Development si AZURE_CLIENT_ID manque : un fallback silencieux annulerait
+    // le bénéfice du fix et masquerait une régression de configuration Bicep.
+    var azureClientId = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID")
+        ?? builder.Configuration["Azure:ManagedIdentityClientId"];
+    TokenCredential credential;
+    if (!string.IsNullOrEmpty(azureClientId))
+    {
+        credential = new ManagedIdentityCredential(azureClientId);
+    }
+    else if (builder.Environment.IsDevelopment())
+    {
+        // Dev seulement : fallback Azure CLI / VS / etc. pour permettre le test local
+        // d'une intégration DataProtection cloud sans Managed Identity.
+        credential = new DefaultAzureCredential();
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            "AZURE_CLIENT_ID environment variable (or Azure:ManagedIdentityClientId config) is required when DataProtection:BlobUri and DataProtection:KeyVaultKeyUri are configured outside Development.");
+    }
     dpBuilder
         .PersistKeysToAzureBlobStorage(new Uri(dpBlobUri), credential)
         .ProtectKeysWithAzureKeyVault(new Uri(dpKeyVaultKeyUri), credential);
 }
-else if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
+else if (!builder.Environment.IsDevelopment() && !isTesting)
 {
     throw new InvalidOperationException(
         "DataProtection:BlobUri and DataProtection:KeyVaultKeyUri must be configured in production (non-Development environment).");
@@ -76,14 +103,14 @@ builder.Services.AddSingleton<KairuFocus.Api.Auth.JwtTokenService>();
 // Authentication — JWT Bearer + GitHub OAuth
 // En env Testing, une clé fictive est utilisée (les tests n'émettent pas de vrais JWT).
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
-    ?? (builder.Environment.IsEnvironment("Testing")
+    ?? (isTesting
         ? "testing-secret-key-minimum-32-chars-for-hmac"
         : throw new InvalidOperationException("Jwt:SecretKey must be configured in appsettings or user secrets."));
 
 var gitHubClientId = builder.Configuration["GitHub:ClientId"] ?? string.Empty;
 var gitHubClientSecret = builder.Configuration["GitHub:ClientSecret"] ?? string.Empty;
 
-if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
+if (!builder.Environment.IsDevelopment() && !isTesting)
 {
     if (string.IsNullOrEmpty(gitHubClientId))
         throw new InvalidOperationException("GitHub:ClientId must be configured in appsettings or user secrets.");
@@ -170,7 +197,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Apply database migrations — skipped in Testing environment (in-memory DB used by integration tests).
-if (!app.Environment.IsEnvironment("Testing"))
+if (!isTesting)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<KairuFocusDbContext>();

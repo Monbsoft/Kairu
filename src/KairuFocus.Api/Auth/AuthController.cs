@@ -100,16 +100,44 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        ClearCorrelationCookies();
         return NoContent();
     }
 
-    // Nettoie le cookie OAuth avant de rediriger vers la page d'erreur,
-    // pour éviter qu'un cookie invalide/partiellement déchiffré
+    // Nettoie le cookie OAuth + les cookies de corrélation .AspNetCore.Correlation.*
+    // avant de rediriger vers la page d'erreur, pour éviter qu'un cookie invalide
+    // (cookie principal partiellement déchiffré, ou cookie de corrélation orphelin)
     // bloque toute reconnexion ultérieure.
     private async Task<IActionResult> RedirectWithErrorAsync(string webBase, string errorCode)
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        ClearCorrelationCookies();
         return Redirect($"{webBase}/login#auth-error={errorCode}");
+    }
+
+    // Supprime les cookies .AspNetCore.Correlation.* résiduels d'un flux OAuth
+    // précédent (challenge interrompu, callback échoué). Sans ce nettoyage,
+    // un cookie de corrélation invalide peut bloquer un challenge ultérieur.
+    //
+    // Le Path doit correspondre à celui posé par CorrelationCookieBuilder
+    // (RequestPathBaseCookieBuilder), qui vaut Request.PathBase ou "/" si
+    // l'app n'a pas de PathBase (cas de KairuFocus). On l'expose explicitement
+    // pour documenter l'invariant et résister à un changement futur de PathBase.
+    private void ClearCorrelationCookies()
+    {
+        var path = string.IsNullOrEmpty(Request.PathBase.Value) ? "/" : Request.PathBase.Value;
+        var cookieOptions = new CookieOptions
+        {
+            Path = path,
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+        };
+        foreach (var cookieName in Request.Cookies.Keys)
+        {
+            if (cookieName.StartsWith(".AspNetCore.Correlation.", StringComparison.Ordinal))
+                Response.Cookies.Delete(cookieName, cookieOptions);
+        }
     }
 
     [HttpGet("me")]

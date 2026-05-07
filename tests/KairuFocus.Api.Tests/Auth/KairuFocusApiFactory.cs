@@ -39,8 +39,8 @@ public sealed class KairuFocusApiFactory : WebApplicationFactory<Program>
                 // GitHub placeholders — not validated in Testing env.
                 ["GitHub:ClientId"] = "test-client-id",
                 ["GitHub:ClientSecret"] = "test-client-secret",
-                // JWT key used by JwtTokenService to generate tokens in tests.
-                ["Jwt:SecretKey"] = "testing-secret-key-minimum-32-chars-for-hmac",
+                // Note: Jwt:SecretKey is captured by Program.cs before this config applies,
+                // so the testing fallback in Program.cs is the single source of truth.
             };
             config.AddInMemoryCollection(testConfig);
         });

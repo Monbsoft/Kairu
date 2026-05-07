@@ -20,7 +20,7 @@ public sealed class ListTasksQueryHandlerTests
     {
         var taskTitle = TaskTitle.Create(title).Value;
         var task = DeveloperTask.Create(taskTitle, null, createdAt ?? DateTime.UtcNow, _userService.CurrentUserId);
-        if (status == DomainTaskStatus.InProgress) task.StartProgress();
+        if (status == DomainTaskStatus.InProgress) task.ChangeStatus(DomainTaskStatus.InProgress, DateTime.UtcNow);
         else if (status == DomainTaskStatus.Done) task.Complete();
         return task;
     }
