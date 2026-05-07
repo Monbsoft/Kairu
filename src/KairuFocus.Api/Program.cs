@@ -1,3 +1,4 @@
+using Azure.Core;
 using Azure.Identity;
 using KairuFocus.Api.Auth;
 using KairuFocus.Api.Auth.Mcp;
@@ -51,7 +52,15 @@ var dpKeyVaultKeyUri = builder.Configuration["DataProtection:KeyVaultKeyUri"];
 
 if (!string.IsNullOrEmpty(dpBlobUri) && !string.IsNullOrEmpty(dpKeyVaultKeyUri))
 {
-    var credential = new DefaultAzureCredential();
+    // En prod : utiliser explicitement la UAMI via AZURE_CLIENT_ID injecté par le Container App.
+    // ManagedIdentityCredential explicite évite la cascade de tentatives de DefaultAzureCredential
+    // (env, VS, Azure CLI, etc.) — démarrage plus rapide et erreurs plus claires.
+    // Fallback DefaultAzureCredential pour les scénarios dev avec Azure CLI/VS.
+    var azureClientId = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID")
+        ?? builder.Configuration["Azure:ManagedIdentityClientId"];
+    TokenCredential credential = !string.IsNullOrEmpty(azureClientId)
+        ? new ManagedIdentityCredential(azureClientId)
+        : new DefaultAzureCredential();
     dpBuilder
         .PersistKeysToAzureBlobStorage(new Uri(dpBlobUri), credential)
         .ProtectKeysWithAzureKeyVault(new Uri(dpKeyVaultKeyUri), credential);
