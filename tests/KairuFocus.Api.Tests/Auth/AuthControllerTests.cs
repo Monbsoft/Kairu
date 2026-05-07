@@ -128,6 +128,40 @@ public sealed class AuthControllerTests : IClassFixture<KairuFocusApiFactory>
             $"Expected a Set-Cookie with past expiry. Got: {string.Join("; ", setCookieHeaders)}");
     }
 
+    /// <summary>
+    /// Verifies that POST /api/auth/logout deletes residual .AspNetCore.Correlation.* cookies
+    /// from a previous OAuth challenge. Without this cleanup, a stale correlation cookie can
+    /// block a subsequent challenge.
+    /// </summary>
+    [Fact]
+    public async Task Should_DeleteCorrelationCookies_When_LogoutEndpointCalled()
+    {
+        // Arrange — JWT + fake stale correlation cookie sent by the client.
+        var jwt = GenerateTestJwt();
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
+        request.Headers.Add("Cookie", ".AspNetCore.Correlation.GitHub.abc123=stale-value");
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert — 204 + Set-Cookie deleting the correlation cookie (past expiry).
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var setCookieHeaders = response.Headers
+            .Where(h => string.Equals(h.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(h => h.Value)
+            .ToList();
+
+        var hasCorrelationDelete = setCookieHeaders.Any(c =>
+            c.Contains(".AspNetCore.Correlation.GitHub.abc123", StringComparison.Ordinal)
+            && (c.Contains("expires=", StringComparison.OrdinalIgnoreCase)
+                || c.Contains("max-age=0", StringComparison.OrdinalIgnoreCase)));
+
+        Assert.True(hasCorrelationDelete,
+            $"Expected Set-Cookie deleting .AspNetCore.Correlation.GitHub.abc123. Got: {string.Join(" | ", setCookieHeaders)}");
+    }
+
     private static string GenerateTestJwt()
     {
         var key = new SymmetricSecurityKey(
