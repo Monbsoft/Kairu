@@ -1,0 +1,6 @@
+/* Cible tactile >= 44px (WCAG 2.1 AA) pour le curseur de volume de l'alarme. */
+.alarm-volume-slider {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}

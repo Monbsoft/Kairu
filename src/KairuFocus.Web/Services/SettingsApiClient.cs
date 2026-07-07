@@ -5,6 +5,7 @@ namespace KairuFocus.Web.Services;
 public sealed record UserSettingsDto(
     string ThemePreference,
     string RingtonePreference,
+    int AlarmVolume,
     string? JiraBaseUrl,
     string? JiraEmail,
     bool JiraConfigured);
@@ -37,4 +38,10 @@ public sealed class SettingsApiClient
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool> SaveAlarmVolumeAsync(int volume)
+    {
+        var request = new { Volume = volume };
+        var response = await _httpClient.PutAsJsonAsync("api/settings/volume", request);
+        return response.IsSuccessStatusCode;
+    }
 }

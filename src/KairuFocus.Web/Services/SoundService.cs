@@ -17,12 +17,12 @@ public sealed class SoundService : ISoundService
         _jsRuntime = jsRuntime;
     }
 
-    public async Task PlayRingtoneAsync(string ringtonePreference)
+    public async Task PlayRingtoneAsync(string ringtonePreference, int volumePercent)
     {
         if (ringtonePreference == "None") return;
 
         if (!SoundFiles.TryGetValue(ringtonePreference, out var soundFile)) return;
 
-        await _jsRuntime.InvokeVoidAsync("kairufocusSound.play", soundFile);
+        await _jsRuntime.InvokeVoidAsync("kairufocusSound.play", soundFile, volumePercent);
     }
 }

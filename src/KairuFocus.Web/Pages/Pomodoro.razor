@@ -244,6 +244,7 @@ else
     private int _shortBreakDuration = 5;
     private int _longBreakDuration = 15;
     private string _ringtonePreference = "AlarmClock";
+    private int _alarmVolume = 80;
 
     // ── Timer ─────────────────────────────────────────────────────────────
     private int _remainingSeconds;
@@ -320,6 +321,7 @@ else
         if (userSettings is not null)
         {
             _ringtonePreference = userSettings.RingtonePreference;
+            _alarmVolume = userSettings.AlarmVolume;
         }
 
         if (_session?.Status == "Active")
@@ -386,7 +388,7 @@ else
 
     private async Task OnTimerCompleted()
     {
-        await SoundService.PlayRingtoneAsync(_ringtonePreference);
+        await SoundService.PlayRingtoneAsync(_ringtonePreference, _alarmVolume);
 
         var completedType = _session?.SessionType;
         var success = await PomodoroApi.CompleteSessionAsync();

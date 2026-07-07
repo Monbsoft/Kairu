@@ -35,6 +35,7 @@ public sealed class GetUserSettingsQueryHandler : IQueryHandler<GetUserSettingsQ
         var viewModel = new UserSettingsViewModel(
             ThemePreference: settings.ThemePreference.ToString(),
             RingtonePreference: settings.RingtonePreference.ToString(),
+            AlarmVolume: settings.AlarmVolume,
             JiraBaseUrl: settings.JiraBaseUrl,
             JiraEmail: settings.JiraEmail,
             JiraConfigured: jiraConfigured

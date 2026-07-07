@@ -47,6 +47,19 @@ else
                     </button>
                 </div>
                 <div class="form-text">Joué automatiquement à la fin de chaque sprint ou pause.</div>
+
+                <div class="mt-3">
+                    <label class="form-label" for="alarmVolume">
+                        Volume de l'alarme : <strong>@_alarmVolume %</strong>
+                    </label>
+                    <input type="range" class="form-range alarm-volume-slider" id="alarmVolume"
+                           min="0" max="100" step="1"
+                           aria-label="Volume de l'alarme" aria-describedby="alarmVolumeHelp"
+                           @bind="_alarmVolume" @bind:event="oninput"
+                           @onchange="OnVolumeChanged"
+                           disabled="@(_selectedRingtone == "None")" />
+                    <div class="form-text" id="alarmVolumeHelp">Volume appliqué au son de test et à la fin de session.</div>
+                </div>
             </div>
         </div>
 
@@ -194,6 +207,7 @@ else
     private SettingsForm _form = new();
     private string _selectedTheme = "System";
     private string _selectedRingtone = "AlarmClock";
+    private int _alarmVolume = 80;
 
     // MCP Token state
     private bool _mcpLoading = true;
@@ -231,6 +245,7 @@ else
         {
             _selectedTheme = userSettings.ThemePreference;
             _selectedRingtone = userSettings.RingtonePreference;
+            _alarmVolume = userSettings.AlarmVolume;
             await ApplyTheme(_selectedTheme);
         }
 
@@ -358,7 +373,12 @@ else
 
     private async Task PreviewRingtone()
     {
-        await SoundService.PlayRingtoneAsync(_selectedRingtone);
+        await SoundService.PlayRingtoneAsync(_selectedRingtone, _alarmVolume);
+    }
+
+    private async Task OnVolumeChanged()
+    {
+        await SettingsApi.SaveAlarmVolumeAsync(_alarmVolume);
     }
 
     private async Task ApplyTheme(string theme)

@@ -11,6 +11,7 @@ public sealed class UserSettings : AggregateRoot<UserId>
 {
     public ThemePreference ThemePreference { get; private set; }
     public RingtonePreference RingtonePreference { get; private set; }
+    public int AlarmVolume { get; private set; }
     public string? JiraBaseUrl { get; private set; }
     public string? JiraEmail { get; private set; }
     public string? JiraApiToken { get; private set; }
@@ -22,12 +23,14 @@ public sealed class UserSettings : AggregateRoot<UserId>
         UserId userId,
         ThemePreference themePreference,
         RingtonePreference ringtonePreference,
+        int alarmVolume,
         string? jiraBaseUrl,
         string? jiraEmail,
         string? jiraApiToken) : base(userId)
     {
         ThemePreference = themePreference;
         RingtonePreference = ringtonePreference;
+        AlarmVolume = alarmVolume;
         JiraBaseUrl = jiraBaseUrl;
         JiraEmail = jiraEmail;
         JiraApiToken = jiraApiToken;
@@ -38,7 +41,7 @@ public sealed class UserSettings : AggregateRoot<UserId>
     /// </summary>
     public static UserSettings CreateDefault(UserId userId)
     {
-        return new UserSettings(userId, ThemePreference.System, RingtonePreference.AlarmClock, null, null, null);
+        return new UserSettings(userId, ThemePreference.System, RingtonePreference.AlarmClock, 80, null, null, null);
     }
 
     /// <summary>
@@ -58,6 +61,14 @@ public sealed class UserSettings : AggregateRoot<UserId>
     }
 
     /// <summary>
+    /// Updates the alarm volume (percentage, clamped to 0–100).
+    /// </summary>
+    public void UpdateAlarmVolume(int newVolume)
+    {
+        AlarmVolume = Math.Clamp(newVolume, 0, 100);
+    }
+
+    /// <summary>
     /// Updates the Jira integration settings.
     /// </summary>
     public void UpdateJiraSettings(string? baseUrl, string? email, string? apiToken)
@@ -74,10 +85,11 @@ public sealed class UserSettings : AggregateRoot<UserId>
         UserId userId,
         ThemePreference themePreference,
         RingtonePreference ringtonePreference,
+        int alarmVolume,
         string? jiraBaseUrl,
         string? jiraEmail,
         string? jiraApiToken)
     {
-        return new UserSettings(userId, themePreference, ringtonePreference, jiraBaseUrl, jiraEmail, jiraApiToken);
+        return new UserSettings(userId, themePreference, ringtonePreference, alarmVolume, jiraBaseUrl, jiraEmail, jiraApiToken);
     }
 }
