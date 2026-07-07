@@ -1,3 +1,4 @@
+using KairuFocus.Application.Settings.Commands.SaveAlarmVolume;
 using KairuFocus.Application.Settings.Commands.SaveRingtonePreference;
 using KairuFocus.Application.Settings.Commands.SaveThemePreference;
 using KairuFocus.Application.Settings.Queries.GetUserSettings;
@@ -53,7 +54,22 @@ public sealed class SettingsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPut("volume")]
+    public async Task<IActionResult> SaveAlarmVolume([FromBody] SaveAlarmVolumeRequest request, CancellationToken ct)
+    {
+        var command = new SaveAlarmVolumeCommand(request.Volume);
+        var result = await _mediator.DispatchAsync<SaveAlarmVolumeCommand, SaveAlarmVolumeResult>(command, ct);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { error = result.Error });
+        }
+
+        return NoContent();
+    }
 }
 
 public sealed record SaveThemePreferenceRequest(string ThemePreference);
 public sealed record SaveRingtonePreferenceRequest(string RingtonePreference);
+public sealed record SaveAlarmVolumeRequest(int Volume);
