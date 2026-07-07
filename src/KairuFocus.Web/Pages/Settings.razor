@@ -52,8 +52,7 @@ else
                     <label class="form-label" for="alarmVolume">
                         Volume de l'alarme : <strong>@_alarmVolume %</strong>
                     </label>
-                    <input type="range" class="form-range" id="alarmVolume"
-                           style="min-height: 44px; display: flex; align-items: center;"
+                    <input type="range" class="form-range alarm-volume-slider" id="alarmVolume"
                            min="0" max="100" step="1"
                            aria-label="Volume de l'alarme" aria-describedby="alarmVolumeHelp"
                            @bind="_alarmVolume" @bind:event="oninput"
