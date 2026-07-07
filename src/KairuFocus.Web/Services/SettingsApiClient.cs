@@ -44,5 +44,4 @@ public sealed class SettingsApiClient
         var response = await _httpClient.PutAsJsonAsync("api/settings/volume", request);
         return response.IsSuccessStatusCode;
     }
-
 }
