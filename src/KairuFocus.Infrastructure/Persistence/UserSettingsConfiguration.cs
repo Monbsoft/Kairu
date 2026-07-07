@@ -30,6 +30,10 @@ internal sealed class UserSettingsConfiguration : IEntityTypeConfiguration<UserS
             .IsRequired()
             .HasDefaultValue(RingtonePreference.AlarmClock);
 
+        builder.Property(s => s.AlarmVolume)
+            .HasDefaultValue(80)
+            .IsRequired();
+
         builder.Property(s => s.JiraBaseUrl).HasColumnType("nvarchar(500)").HasMaxLength(500);
         builder.Property(s => s.JiraEmail).HasColumnType("nvarchar(200)").HasMaxLength(200);
         builder.Property(s => s.JiraApiToken).HasColumnType("nvarchar(500)").HasMaxLength(500);
