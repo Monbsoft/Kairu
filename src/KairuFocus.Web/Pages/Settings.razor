@@ -194,6 +194,7 @@ else
     private SettingsForm _form = new();
     private string _selectedTheme = "System";
     private string _selectedRingtone = "AlarmClock";
+    private int _alarmVolume = 80;
 
     // MCP Token state
     private bool _mcpLoading = true;
@@ -231,6 +232,7 @@ else
         {
             _selectedTheme = userSettings.ThemePreference;
             _selectedRingtone = userSettings.RingtonePreference;
+            _alarmVolume = userSettings.AlarmVolume;
             await ApplyTheme(_selectedTheme);
         }
 
@@ -358,7 +360,7 @@ else
 
     private async Task PreviewRingtone()
     {
-        await SoundService.PlayRingtoneAsync(_selectedRingtone);
+        await SoundService.PlayRingtoneAsync(_selectedRingtone, _alarmVolume);
     }
 
     private async Task ApplyTheme(string theme)
