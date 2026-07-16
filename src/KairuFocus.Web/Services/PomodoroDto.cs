@@ -32,3 +32,5 @@ public sealed record SuggestedSessionTypeDto(
 public sealed record FocusStatsDto(IReadOnlyList<FocusDayDto> Days);
 
 public sealed record FocusDayDto(DateOnly Date, int SprintCount, int FocusMinutes);
+
+public sealed record CompleteSessionResponseDto(int XpAwarded);

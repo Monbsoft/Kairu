@@ -123,6 +123,8 @@ else
     </div>
 }
 
+<XpToast @ref="_xpToast" />
+
 @code {
     // ── État ──────────────────────────────────────────────────────────────
     private bool _loaded;
@@ -136,6 +138,7 @@ else
     private PomodoroSessionDto? _lastCompleted;
     private string? _errorMessage;
     private CancellationTokenSource? _timerCts;
+    private XpToast? _xpToast;
 
     // ── Computed ──────────────────────────────────────────────────────────
     private string TimeDisplay =>
@@ -185,9 +188,12 @@ else
     {
         await StopTimer();
         _running = false;
-        var ok = await PomodoroApi.CompleteSessionAsync();
-        if (!ok) { _errorMessage = "Impossible de terminer le sprint."; return; }
+        var xpAwarded = await PomodoroApi.CompleteSessionAsync();
+        if (xpAwarded is null) { _errorMessage = "Impossible de terminer le sprint."; return; }
         await RefreshAfterSprint();
+
+        if (xpAwarded.Value > 0 && _xpToast is not null)
+            _ = _xpToast.ShowAsync(xpAwarded.Value);
     }
 
     private async Task InterruptSprint()

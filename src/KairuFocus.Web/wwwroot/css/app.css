@@ -543,7 +543,7 @@ code {
 .kf-stats-page__empty-text { margin: 0; color: var(--text-secondary); }
 
 /* KPI */
-.kf-stats-page__kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+.kf-stats-page__kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .kf-kpi { padding: 1.1rem 1.25rem; }
 .kf-kpi__label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-wide); color: var(--text-muted); font-weight: 700; }
 .kf-kpi__value { font-size: var(--text-2xl); font-weight: 700; margin-top: .2rem; color: var(--text-primary); }
@@ -579,4 +579,4 @@ code {
 /* Skeleton : la règle de base .kf-skel + l'animation @keyframes kf-shimmer
    sont définies globalement plus haut dans ce fichier (pas scopées à .kf-dash),
    donc le skeleton de chargement fonctionne ici sans duplication. */
-.kf-stats-page .kf-skelrow { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.kf-stats-page .kf-skelrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
