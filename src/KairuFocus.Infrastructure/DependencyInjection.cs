@@ -1,5 +1,6 @@
 using KairuFocus.Application.Identity;
 using KairuFocus.Application.Tickets;
+using KairuFocus.Domain.Gamification;
 using KairuFocus.Domain.Identity;
 using KairuFocus.Domain.Journal;
 using KairuFocus.Domain.Pomodoro;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IJournalEntryRepository, EfCoreJournalEntryRepository>();
         services.AddScoped<IUserSettingsRepository, EfCoreUserSettingsRepository>();
         services.AddScoped<IMcpTokenRepository, EfCoreMcpTokenRepository>();
+        services.AddScoped<IXpGainRepository, EfCoreXpGainRepository>();
 
         services.AddSingleton<IMcpTokenGenerator, McpTokenGenerator>();
         services.AddHttpClient<IJiraTicketService, JiraApiClient>();
