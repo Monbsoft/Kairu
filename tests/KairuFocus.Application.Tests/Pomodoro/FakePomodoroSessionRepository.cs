@@ -8,10 +8,32 @@ internal sealed class FakePomodoroSessionRepository : IPomodoroSessionRepository
     public List<PomodoroSession> Sessions { get; } = [];
     public int UpdateAsyncCallCount { get; private set; }
 
-    public Task AddAsync(PomodoroSession session, CancellationToken cancellationToken = default)
+    /// <summary>Invoked at the beginning of TryAddAsync — lets a test insert the "winning"
+    /// concurrent session, faithfully reproducing the unique-index rejection.</summary>
+    public Action? OnTryAdd { get; set; }
+
+    /// <summary>Invoked when TryAddAsync rejects the insert — lets a test close the winning
+    /// session in between, reproducing the "rejected but nothing readable" race.</summary>
+    public Action? OnInsertRejected { get; set; }
+
+    /// <summary>
+    /// Simulates the unique filtered index: the insert is rejected when another Active
+    /// session already exists for the same owner.
+    /// </summary>
+    public Task<bool> TryAddAsync(PomodoroSession session, CancellationToken cancellationToken = default)
     {
+        OnTryAdd?.Invoke();
+
+        var conflicts = Sessions.Any(s => s.OwnerId == session.OwnerId
+                                          && s.Status == PomodoroSessionStatus.Active);
+        if (conflicts)
+        {
+            OnInsertRejected?.Invoke();
+            return Task.FromResult(false);
+        }
+
         Sessions.Add(session);
-        return Task.CompletedTask;
+        return Task.FromResult(true);
     }
 
     public Task<PomodoroSession?> GetByIdAsync(PomodoroSessionId id, CancellationToken cancellationToken = default) =>

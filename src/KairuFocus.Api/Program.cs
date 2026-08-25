@@ -1,4 +1,4 @@
-using Azure.Core;
+﻿using Azure.Core;
 using Azure.Identity;
 using KairuFocus.Api.Auth;
 using KairuFocus.Api.Auth.Mcp;
@@ -205,7 +205,11 @@ if (!isTesting)
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<KairuFocusDbContext>();
     Console.WriteLine("Applying database migrations...");
-    await db.Database.MigrateAsync();
+    // EnableRetryOnFailure installs a retrying execution strategy, which forbids the
+    // user-initiated transaction MigrateAsync opens. Running it through the strategy makes
+    // the whole migration the retryable unit of work instead.
+    var strategy = db.Database.CreateExecutionStrategy();
+    await strategy.ExecuteAsync(() => db.Database.MigrateAsync());
     Console.WriteLine("Database migrations applied successfully.");
 }
 

@@ -92,8 +92,8 @@ else
         <div class="d-flex gap-2">
             @if (_session is null || _session.Status is "Completed" or "Interrupted")
             {
-                <button class="btn btn-primary btn-lg" @onclick="StartSession">
-                    ▶ Démarrer
+                <button class="btn btn-primary btn-lg" @onclick="StartSession" disabled="@_starting">
+                    @(_starting ? "Démarrage…" : "▶ Démarrer")
                 </button>
             }
             else if (_session.Status == "Active")
@@ -204,9 +204,14 @@ else
             </div>
         }
 
+        @if (_infoMessage is not null)
+        {
+            <div class="alert alert-info" role="status" style="max-width:480px">@_infoMessage</div>
+        }
+
         @if (_errorMessage is not null)
         {
-            <div class="alert alert-danger" style="max-width:480px">@_errorMessage</div>
+            <div class="alert alert-danger" role="alert" style="max-width:480px">@_errorMessage</div>
         }
     </div>
 }
@@ -237,6 +242,8 @@ else
     private List<TaskDto> _allTasks = [];
     private List<TaskDto> _linkedTasks = [];
     private string? _errorMessage;
+    private string? _infoMessage;
+    private bool _starting;
     private string _newTaskTitle = string.Empty;
     private string _selectedTaskIdToLink = string.Empty;
     private XpToast? _xpToast;
@@ -327,9 +334,8 @@ else
             _alarmVolume = userSettings.AlarmVolume;
         }
 
-        if (_session?.Status == "Active")
+        if (_session?.Status == "Active" && TryAdoptTimedSession(_session))
         {
-            InitTimer(_session);
             await StartTimerLoop();
         }
 
@@ -355,21 +361,60 @@ else
 
     private async Task StartSession()
     {
+        if (_starting) return;
+        _starting = true;
         _errorMessage = null;
+        _infoMessage = null;
         _completedSessionType = null;
         _suggestedNextSessionType = null;
+        StateHasChanged();
 
-        var started = await PomodoroApi.StartSessionAsync(_selectedSessionType);
-        if (started is null)
+        try
         {
-            _errorMessage = "Impossible de démarrer la session.";
-            return;
-        }
+            var outcome = await PomodoroApi.StartSessionAsync(_selectedSessionType);
+            if (outcome.Session is null)
+            {
+                // The POST may have actually succeeded server-side even though we see no
+                // session here (HTTP timeout on the way back, or a 409 raised by our own
+                // earlier attempt once the 5s server idempotency window has elapsed).
+                // Resync with the server before surfacing an error, so the user never gets
+                // stuck on an errored screen while a session is genuinely running.
+                var current = await PomodoroApi.GetCurrentSessionAsync();
+                if (current?.Status == "Active")
+                {
+                    if (TryAdoptTimedSession(current))
+                    {
+                        if (current.SessionType != _selectedSessionType)
+                        {
+                            // The resync recovered a different session type than the one the
+                            // user just asked for (e.g. an interrupted attempt actually landed
+                            // as a break). Adopting it silently would leave the tab selector out
+                            // of sync with no explanation — surface it instead.
+                            _infoMessage = $"Une session « {SessionTypeLabel(current.SessionType)} » était déjà en cours ; on l'a reprise.";
+                            _selectedSessionType = current.SessionType;
+                        }
 
-        _session = started;
-        InitTimer(_session);
-        RefreshLinkedTasks();
-        await StartTimerLoop();
+                        RefreshLinkedTasks();
+                        await StartTimerLoop();
+                    }
+
+                    return;
+                }
+
+                _errorMessage = outcome.Error ?? "Impossible de démarrer la session.";
+                return;
+            }
+
+            if (TryAdoptTimedSession(outcome.Session))
+            {
+                RefreshLinkedTasks();
+                await StartTimerLoop();
+            }
+        }
+        finally
+        {
+            _starting = false;
+        }
     }
 
     private async Task InterruptSession()
@@ -476,6 +521,38 @@ else
         if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newTaskTitle))
             await CreateTask();
     }
+
+    /// <summary>Wires the local countdown-timer state onto a session reported as Active by the
+    /// server, unless it's a free sprint (<c>PlannedDurationMinutes == 0</c>). Free sprints carry
+    /// no planned duration, so <see cref="InitTimer"/> would compute <c>_totalSeconds = 0</c> and
+    /// the timer loop would complete — and close — the session on its very first tick. This is the
+    /// single choke point for every path on this page that can discover an active session: initial
+    /// load, a successful start, and the resync after an ambiguous start response. Returns
+    /// <c>true</c> when a timed session was adopted (the caller must then start the timer loop);
+    /// <c>false</c> when the active session was a free sprint — <c>_session</c> is cleared and
+    /// <c>_infoMessage</c> invites the user to rejoin it from the Sprint libre screen instead.
+    /// </summary>
+    private bool TryAdoptTimedSession(PomodoroSessionDto session)
+    {
+        if (session.PlannedDurationMinutes == 0)
+        {
+            _session = null;
+            _infoMessage = "Un sprint libre est déjà en cours. Rejoins-le depuis « Sprint libre ».";
+            return false;
+        }
+
+        _session = session;
+        InitTimer(session);
+        return true;
+    }
+
+    private static string SessionTypeLabel(string sessionType) => sessionType switch
+    {
+        "Sprint" => "Sprint",
+        "ShortBreak" => "Pause courte",
+        "LongBreak" => "Pause longue",
+        _ => sessionType
+    };
 
     // ── Timer internals ───────────────────────────────────────────────────
     private void InitTimer(PomodoroSessionDto session)
