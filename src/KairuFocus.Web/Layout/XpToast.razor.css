@@ -1,0 +1,48 @@
+/* Non-intrusive, self-dismissing feedback — fixed overlay, never blocks interaction. */
+.kf-xp-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    z-index: 1080;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.6rem 1.1rem;
+    background: #198754;
+    color: #fff;
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(16, 24, 40, 0.25);
+    font-weight: 700;
+    font-size: 0.95rem;
+    pointer-events: none;
+    animation: kf-xp-toast-in 0.25s ease-out,
+               kf-xp-toast-out 0.3s ease-in 3.7s forwards;
+}
+
+[data-bs-theme="dark"] .kf-xp-toast {
+    background: #34c77b;
+    color: #0f172a;
+}
+
+.kf-xp-toast__icon {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+@keyframes kf-xp-toast-in {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes kf-xp-toast-out {
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to   { opacity: 0; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kf-xp-toast {
+        animation: none;
+        transform: translate(-50%, 0);
+    }
+}

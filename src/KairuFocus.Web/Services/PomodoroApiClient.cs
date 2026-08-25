@@ -95,10 +95,23 @@ public sealed class PomodoroApiClient
         return await response.Content.ReadFromJsonAsync<List<PomodoroSessionDto>>() ?? [];
     }
 
-    public async Task<bool> CompleteSessionAsync()
+    /// <summary>Completes the current session. Returns null on failure, otherwise the XP
+    /// awarded for this completion (0 if the session wasn't XP-eligible).</summary>
+    public async Task<int?> CompleteSessionAsync()
     {
         var response = await _http.PatchAsync("api/pomodoro/session/complete", null);
-        return response.IsSuccessStatusCode;
+        if (!response.IsSuccessStatusCode) return null;
+
+        try
+        {
+            var body = await response.Content.ReadFromJsonAsync<CompleteSessionResponseDto>();
+            return body?.XpAwarded ?? 0;
+        }
+        catch (Exception)
+        {
+            // Backward-compatible: an absent/malformed body must never fail the completion flow.
+            return 0;
+        }
     }
 
     public async Task<bool> InterruptSessionAsync()

@@ -1,0 +1,53 @@
+@* Ephemeral "+N XP" feedback toast. Self-contained: the parent calls ShowAsync(amount)
+   after a successful sprint completion with XpAwarded > 0. Never shown otherwise. *@
+@implements IDisposable
+
+@* The live region stays mounted so screen readers announce content added later
+   (a freshly-inserted aria-live region is not announced by several readers). *@
+<div role="status" aria-live="polite">
+    @if (_visible)
+    {
+        <div class="kf-xp-toast">
+            <span class="kf-xp-toast__icon" aria-hidden="true">&#11088;</span>
+            <span>+@_amount XP</span>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _visible;
+    private int _amount;
+    private CancellationTokenSource? _cts;
+
+    /// <summary>Shows "+amount XP" for ~4s, then hides automatically. Safe to call again
+    /// while already visible (restarts the auto-hide timer with the new amount).</summary>
+    public async Task ShowAsync(int amount)
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _cts = cts;
+
+        _amount = amount;
+        _visible = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(4), cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        _visible = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

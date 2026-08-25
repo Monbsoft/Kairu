@@ -1,3 +1,4 @@
+using KairuFocus.Domain.Gamification;
 using KairuFocus.Domain.Identity;
 using KairuFocus.Domain.Journal;
 using KairuFocus.Domain.Pomodoro;
@@ -21,6 +22,7 @@ public sealed class KairuFocusDbContext : DbContext
     public DbSet<JournalComment> JournalComments => Set<JournalComment>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<McpToken> McpTokens => Set<McpToken>();
+    public DbSet<XpGain> XpGains => Set<XpGain>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,5 +45,6 @@ public sealed class KairuFocusDbContext : DbContext
         modelBuilder.ApplyConfiguration(new JournalCommentConfiguration());
         modelBuilder.ApplyConfiguration(new UserSettingsConfiguration());
         modelBuilder.ApplyConfiguration(new McpTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new XpGainConfiguration());
     }
 }

@@ -122,8 +122,9 @@ public sealed class PomodoroController : ControllerBase
     public async Task<IActionResult> CompleteSession(CancellationToken ct)
     {
         var result = await _mediator.DispatchAsync<CompleteSessionCommand, CompleteSessionResult>(new CompleteSessionCommand(), ct);
+        // Contract change (204 → 200): the body carries the XP credited for this completion.
         return result.IsSuccess
-            ? NoContent()
+            ? Ok(new { xpAwarded = result.XpAwarded })
             : BadRequest(new { error = result.Error });
     }
 

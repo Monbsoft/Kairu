@@ -211,6 +211,8 @@ else
     </div>
 }
 
+<XpToast @ref="_xpToast" />
+
 @code {
     // ── Constantes SVG ─────────────────────────────────────────────────────
     private const double Radius = 95.0;
@@ -237,6 +239,7 @@ else
     private string? _errorMessage;
     private string _newTaskTitle = string.Empty;
     private string _selectedTaskIdToLink = string.Empty;
+    private XpToast? _xpToast;
 
     // ── Session type selection ────────────────────────────────────────────
     private string _selectedSessionType = "Sprint";
@@ -391,8 +394,8 @@ else
         await SoundService.PlayRingtoneAsync(_ringtonePreference, _alarmVolume);
 
         var completedType = _session?.SessionType;
-        var success = await PomodoroApi.CompleteSessionAsync();
-        if (!success)
+        var xpAwarded = await PomodoroApi.CompleteSessionAsync();
+        if (xpAwarded is null)
         {
             _errorMessage = "Impossible de terminer la session.";
             StateHasChanged();
@@ -410,6 +413,9 @@ else
 
         RefreshLinkedTasks();
         StateHasChanged();
+
+        if (xpAwarded.Value > 0 && _xpToast is not null)
+            _ = _xpToast.ShowAsync(xpAwarded.Value);
     }
 
     private async Task LinkExistingTask()

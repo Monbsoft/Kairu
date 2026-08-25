@@ -1,4 +1,5 @@
 using KairuFocus.Application.Common;
+using KairuFocus.Application.Gamification.Commands.CreditSprintXp;
 using KairuFocus.Application.Journal.Commands.CreateEntry;
 using KairuFocus.Domain.Journal;
 using KairuFocus.Domain.Pomodoro;
@@ -67,6 +68,25 @@ public sealed class CompleteSessionCommandHandler : ICommandHandler<CompleteSess
                 session.JournalComment),
             cancellationToken);
 
-        return CompleteSessionResult.Success();
+        // Credit sprint XP — the completion is already persisted; a failing credit
+        // must NEVER fail the completion (ADR-023), hence log-only error handling.
+        var xpAwarded = 0;
+        try
+        {
+            // CancellationToken.None: the completion is persisted, so a client disconnect
+            // must not abort the credit (it would be lost with no automatic replay).
+            var xpResult = await _mediator.DispatchAsync<CreditSprintXpCommand, CreditSprintXpResult>(
+                new CreditSprintXpCommand(session.Id.Value), CancellationToken.None);
+            if (xpResult.IsSuccess)
+                xpAwarded = xpResult.XpAwarded;
+            else
+                _logger.LogError("XP credit failed for session {SessionId}: {Error}", session.Id.Value, xpResult.Error);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "XP credit failed for session {SessionId}", session.Id.Value);
+        }
+
+        return CompleteSessionResult.Success(xpAwarded);
     }
 }
