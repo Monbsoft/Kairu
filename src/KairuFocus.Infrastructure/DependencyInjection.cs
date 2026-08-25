@@ -22,7 +22,16 @@ public static class DependencyInjection
         string connectionString)
     {
         services.AddDbContext<KairuFocusDbContext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseSqlServer(connectionString, sqlOptions =>
+                // Azure SQL and local SQL Server both drop connections occasionally
+                // (failover, throttling). Without a retry policy every transient error
+                // surfaces as a 500 to the user.
+                // No user-managed transaction exists in this codebase, so the execution
+                // strategy introduced here has nothing to conflict with.
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null)));
 
         // All repositories use EF Core (works with both SQLite and SQL Server)
         services.AddScoped<IUserRepository, EfCoreUserRepository>();

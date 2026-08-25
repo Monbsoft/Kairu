@@ -61,8 +61,8 @@ else
         <div class="d-flex gap-2">
             @if (!_running)
             {
-                <button class="btn btn-primary btn-lg" @onclick="StartSprint">
-                    &#9654; Démarrer
+                <button class="btn btn-primary btn-lg" @onclick="StartSprint" disabled="@_starting">
+                    @(_starting ? "Démarrage…" : "▶ Démarrer")
                 </button>
             }
             else
@@ -88,7 +88,7 @@ else
 
         @if (_errorMessage is not null)
         {
-            <div class="alert alert-danger" style="max-width:480px">@_errorMessage</div>
+            <div class="alert alert-danger" role="alert" style="max-width:480px">@_errorMessage</div>
         }
 
         <!-- Historique du jour -->
@@ -138,6 +138,7 @@ else
     private List<TaskDto> _availableTasks = [];
     private PomodoroSessionDto? _lastCompleted;
     private string? _errorMessage;
+    private bool _starting;
     private CancellationTokenSource? _timerCts;
 
     // ── Computed ──────────────────────────────────────────────────────────
@@ -168,25 +169,35 @@ else
     // ── Actions ───────────────────────────────────────────────────────────
     private async Task StartSprint()
     {
+        if (_starting) return;
+        _starting = true;
         _errorMessage = null;
         _lastCompleted = null;
+        StateHasChanged();
 
-        var note = _note.Trim() is { Length: > 0 } n ? n : null;
-        var session = await PomodoroApi.StartFreeSprintAsync(note);
-        if (session is null)
+        try
         {
-            _errorMessage = "Impossible de démarrer le sprint.";
-            return;
+            var note = _note.Trim() is { Length: > 0 } n ? n : null;
+            var session = await PomodoroApi.StartFreeSprintAsync(note);
+            if (session is null)
+            {
+                _errorMessage = "Impossible de démarrer le sprint.";
+                return;
+            }
+
+            _activeSessionId = session.Id;
+            _elapsedSeconds = 0;
+            _running = true;
+
+            if (Guid.TryParse(_selectedTaskId, out var taskGuid))
+                await PomodoroApi.LinkTaskAsync(taskGuid);
+
+            await StartTimerLoop();
         }
-
-        _activeSessionId = session.Id;
-        _elapsedSeconds = 0;
-        _running = true;
-
-        if (Guid.TryParse(_selectedTaskId, out var taskGuid))
-            await PomodoroApi.LinkTaskAsync(taskGuid);
-
-        await StartTimerLoop();
+        finally
+        {
+            _starting = false;
+        }
     }
 
     private async Task FinishSprint()

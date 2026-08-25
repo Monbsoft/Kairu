@@ -62,30 +62,99 @@ public sealed class PomodoroApiClient
         return await response.Content.ReadFromJsonAsync<SuggestedSessionTypeDto>();
     }
 
+    /// <summary>Fetches the currently active session, if any. Returns <c>null</c> both when there
+    /// genuinely isn't one (204/non-success status) and when the call itself failed — no network,
+    /// a timeout, or an unparsable body. This mirrors <see cref="ToStartSessionOutcomeAsync"/>: the
+    /// resync path in <c>Pomodoro.razor</c>/<c>SprintLibre.razor</c> calls this method precisely
+    /// when the network is already suspect (after a start-session call came back with no session),
+    /// so it must never let an exception escape — there is no <c>ErrorBoundary</c> in this app, and
+    /// an unhandled exception here would replace the page's own error message with the global error
+    /// UI.</summary>
     public async Task<PomodoroSessionDto?> GetCurrentSessionAsync()
     {
-        var response = await _http.GetAsync("api/pomodoro/session");
-        if (response.StatusCode == HttpStatusCode.NoContent) return null;
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<PomodoroSessionDto>();
+        try
+        {
+            var response = await _http.GetAsync("api/pomodoro/session");
+            if (response.StatusCode == HttpStatusCode.NoContent) return null;
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<PomodoroSessionDto>();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
     }
 
-    public async Task<PomodoroSessionDto?> StartSessionAsync(string? sessionType = null)
+    public async Task<StartSessionOutcome> StartSessionAsync(string? sessionType = null)
     {
         var url = string.IsNullOrEmpty(sessionType)
             ? "api/pomodoro/session"
             : $"api/pomodoro/session?type={sessionType}";
-        var response = await _http.PostAsync(url, null);
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<PomodoroSessionDto>();
+
+        try
+        {
+            var response = await _http.PostAsync(url, null);
+            return await ToStartSessionOutcomeAsync(response);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            return new StartSessionOutcome(null, "Serveur injoignable, vérifie ta connexion.");
+        }
     }
 
-    public async Task<PomodoroSessionDto?> StartFreeSprintAsync(string? journalComment)
+    public async Task<StartSessionOutcome> StartFreeSprintAsync(string? journalComment)
     {
-        var response = await _http.PostAsJsonAsync("api/pomodoro/session/free-sprint",
-            new { JournalComment = journalComment });
-        if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<PomodoroSessionDto>();
+        try
+        {
+            var response = await _http.PostAsJsonAsync("api/pomodoro/session/free-sprint",
+                new { JournalComment = journalComment });
+            return await ToStartSessionOutcomeAsync(response);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            return new StartSessionOutcome(null, "Serveur injoignable, vérifie ta connexion.");
+        }
+    }
+
+    /// <summary>Translates a start-session/start-free-sprint HTTP response into a user-facing
+    /// outcome. Never throws — a malformed/absent error body falls back to a generic message for
+    /// the status code, and a malformed success body (a session was created server-side, but we
+    /// can't parse it) is reported as a null session with a generic error rather than propagating
+    /// a <see cref="JsonException"/>. This is deliberate: callers resync via
+    /// <see cref="GetCurrentSessionAsync"/> whenever <see cref="StartSessionOutcome.Session"/> is
+    /// null, so this path still recovers instead of leaving the caller with an unhandled
+    /// exception.</summary>
+    private static async Task<StartSessionOutcome> ToStartSessionOutcomeAsync(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            try
+            {
+                var session = await response.Content.ReadFromJsonAsync<PomodoroSessionDto>();
+                return new StartSessionOutcome(session, null);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return new StartSessionOutcome(null, "Réponse du serveur invalide, réessaie.");
+            }
+        }
+
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            // The API returns 409 for two distinct causes (SessionAlreadyActive and
+            // ConcurrentSessionStart) but only carries their English domain text, which is not
+            // displayable here. Both are surfaced with the same message until the API exposes a
+            // machine-readable error code — see the technical debt entry for iteration #39.
+            return new StartSessionOutcome(null, "Une session est déjà en cours.");
+        }
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            return new StartSessionOutcome(null, "Ta session a expiré, reconnecte-toi.");
+
+        if ((int)response.StatusCode >= 500)
+            return new StartSessionOutcome(null, $"Le serveur n'a pas pu démarrer la session (erreur {(int)response.StatusCode}).");
+
+        return new StartSessionOutcome(null, $"Impossible de démarrer la session (erreur {(int)response.StatusCode}).");
     }
 
     public async Task<List<PomodoroSessionDto>> GetTodaySprintSessionsAsync()

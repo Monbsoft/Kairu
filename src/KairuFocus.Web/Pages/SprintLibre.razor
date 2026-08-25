@@ -58,8 +58,8 @@ else
         <div class="d-flex gap-2">
             @if (!_running)
             {
-                <button class="btn btn-primary btn-lg" @onclick="StartSprint">
-                    &#9654; Démarrer
+                <button class="btn btn-primary btn-lg" @onclick="StartSprint" disabled="@_starting">
+                    @(_starting ? "Démarrage…" : "▶ Démarrer")
                 </button>
             }
             else
@@ -85,7 +85,7 @@ else
 
         @if (_errorMessage is not null)
         {
-            <div class="alert alert-danger" style="max-width:480px">@_errorMessage</div>
+            <div class="alert alert-danger" role="alert" style="max-width:480px">@_errorMessage</div>
         }
 
         <!-- Historique du jour -->
@@ -137,6 +137,7 @@ else
     private List<TaskDto> _availableTasks = [];
     private PomodoroSessionDto? _lastCompleted;
     private string? _errorMessage;
+    private bool _starting;
     private CancellationTokenSource? _timerCts;
     private XpToast? _xpToast;
 
@@ -151,6 +152,16 @@ else
         _availableTasks = (await TaskApi.GetAllAsync())
             .Where(t => t.Status != "Done")
             .ToList();
+
+        // Rejoin a free sprint that is already running (started here then navigated away, or
+        // redirected from /pomodoro, which refuses to run a free sprint on its countdown).
+        // Without this, landing here shows "Démarrer" and the user only recovers their sprint
+        // through a 409 and the resync path in StartSprint — a recovery path posing as the
+        // nominal one.
+        var current = await PomodoroApi.GetCurrentSessionAsync();
+        if (current?.Status == "Active" && current.PlannedDurationMinutes == 0 && AdoptActiveSprint(current))
+            await StartTimerLoop();
+
         _loaded = true;
     }
 
@@ -162,26 +173,82 @@ else
     // ── Actions ───────────────────────────────────────────────────────────
     private async Task StartSprint()
     {
+        if (_starting) return;
+        _starting = true;
         _errorMessage = null;
         _lastCompleted = null;
+        StateHasChanged();
 
-        var note = _note.Trim() is { Length: > 0 } n ? n : null;
-        var session = await PomodoroApi.StartFreeSprintAsync(note);
-        if (session is null)
+        try
         {
-            _errorMessage = "Impossible de démarrer le sprint.";
-            return;
+            var note = _note.Trim() is { Length: > 0 } n ? n : null;
+            var outcome = await PomodoroApi.StartFreeSprintAsync(note);
+            if (outcome.Session is null)
+            {
+                // The POST may have actually succeeded server-side even though we see no
+                // session here (HTTP timeout on the way back, or a 409 raised by our own
+                // earlier attempt once the 5s server idempotency window has elapsed). Resync
+                // with the server before surfacing an error, so the user never gets stuck on
+                // an errored screen while a sprint is genuinely running.
+                var current = await PomodoroApi.GetCurrentSessionAsync();
+                if (current?.Status == "Active")
+                {
+                    if (AdoptActiveSprint(current))
+                    {
+                        // Link selected task if any — best-effort, mirrors the success path.
+                        if (Guid.TryParse(_selectedTaskId, out var resyncTaskGuid))
+                            await PomodoroApi.LinkTaskAsync(resyncTaskGuid);
+
+                        await StartTimerLoop();
+                    }
+
+                    return;
+                }
+
+                _errorMessage = outcome.Error ?? "Impossible de démarrer le sprint.";
+                return;
+            }
+
+            if (AdoptActiveSprint(outcome.Session))
+            {
+                // Link selected task if any
+                if (Guid.TryParse(_selectedTaskId, out var taskGuid))
+                    await PomodoroApi.LinkTaskAsync(taskGuid);
+
+                await StartTimerLoop();
+            }
+        }
+        finally
+        {
+            _starting = false;
+        }
+    }
+
+    /// <summary>Wires the local timer state onto an active session, whether it just got
+    /// created or was recovered by resyncing with the server. Refuses to adopt anything other
+    /// than a free sprint (<c>PlannedDurationMinutes == 0</c>): a timed Pomodoro session
+    /// (sprint/break) adopted here would run as a plain count-up with no decrementing countdown
+    /// or end-of-session alarm, <see cref="FinishSprint"/> would complete it as if it were a
+    /// free sprint, and <see cref="RefreshAfterSprint"/> would never find it again in
+    /// <c>_todaySprints</c> (the today-sprints query filters on <c>PlannedDurationMinutes == 0</c>).
+    /// Computes the elapsed time from <see cref="PomodoroSessionDto.StartedAt"/> so an adopted
+    /// (already running) session displays its real elapsed time instead of restarting from zero.
+    /// Returns <c>true</c> if the session was adopted; <c>false</c> if it was rejected, in which
+    /// case <c>_errorMessage</c> explains why and the caller must not start the timer loop.</summary>
+    private bool AdoptActiveSprint(PomodoroSessionDto session)
+    {
+        if (session.PlannedDurationMinutes != 0)
+        {
+            _errorMessage = "Une session Pomodoro chronométrée est déjà en cours. Rejoins-la depuis « Pomodoro ».";
+            return false;
         }
 
         _activeSessionId = session.Id;
-        _elapsedSeconds = 0;
+        _elapsedSeconds = session.StartedAt.HasValue
+            ? Math.Max(0, (int)(DateTime.UtcNow - session.StartedAt.Value).TotalSeconds)
+            : 0;
         _running = true;
-
-        // Link selected task if any
-        if (Guid.TryParse(_selectedTaskId, out var taskGuid))
-            await PomodoroApi.LinkTaskAsync(taskGuid);
-
-        await StartTimerLoop();
+        return true;
     }
 
     private async Task FinishSprint()

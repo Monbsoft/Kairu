@@ -34,3 +34,8 @@ public sealed record FocusStatsDto(IReadOnlyList<FocusDayDto> Days);
 public sealed record FocusDayDto(DateOnly Date, int SprintCount, int FocusMinutes);
 
 public sealed record CompleteSessionResponseDto(int XpAwarded);
+
+/// <summary>Result of a start-session/start-free-sprint call: either the created session
+/// (<see cref="Session"/> set, <see cref="Error"/> null) or a user-facing French error message
+/// (<see cref="Session"/> null, <see cref="Error"/> set) — never both.</summary>
+public sealed record StartSessionOutcome(PomodoroSessionDto? Session, string? Error);

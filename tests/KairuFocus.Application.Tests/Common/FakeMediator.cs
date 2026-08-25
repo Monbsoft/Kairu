@@ -23,6 +23,9 @@ public sealed class FakeMediator : IMediator
     /// <summary>When true, dispatching CreditSprintXpCommand throws (simulated credit failure).</summary>
     public bool ThrowOnCreditSprintXp { get; set; }
 
+    /// <summary>When true, dispatching CreateEntryCommand throws (simulated journal crash).</summary>
+    public bool ThrowOnCreateEntry { get; set; }
+
     /// <summary>When set, dispatching CreditSprintXpCommand returns a clean Failure with this error.</summary>
     public string? CreditSprintXpFailureError { get; set; }
 
@@ -45,6 +48,9 @@ public sealed class FakeMediator : IMediator
     {
         if (command is CreateEntryCommand createEntryCommand)
         {
+            if (ThrowOnCreateEntry)
+                throw new InvalidOperationException("Simulated journal entry failure.");
+
             var result = await _createEntryHandler.Handle(createEntryCommand, cancellationToken);
             return (TResponse)(object)result;
         }

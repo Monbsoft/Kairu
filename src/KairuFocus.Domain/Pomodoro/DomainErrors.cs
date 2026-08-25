@@ -5,6 +5,7 @@ public static class DomainErrors
     public static class Pomodoro
     {
         public const string SessionAlreadyActive = "A Pomodoro session is already active.";
+        public const string ConcurrentSessionStart = "Another session start was processed at the same time. Please retry.";
         public const string SessionNotActive = "No Pomodoro session is currently active.";
         public const string NoActiveSession = "No active session.";
         public const string SessionNotFound = "Pomodoro session not found.";

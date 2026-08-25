@@ -1,10 +1,15 @@
-using KairuFocus.Domain.Identity;
+﻿using KairuFocus.Domain.Identity;
 
 namespace KairuFocus.Domain.Pomodoro;
 
 public interface IPomodoroSessionRepository
 {
-    Task AddAsync(PomodoroSession session, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Adds the session. Returns false when adding this session would violate the
+    /// "at most one Active session per owner" invariant (concurrent start).
+    /// </summary>
+    Task<bool> TryAddAsync(PomodoroSession session, CancellationToken cancellationToken = default);
+
     Task<PomodoroSession?> GetByIdAsync(PomodoroSessionId id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PomodoroSession>> GetByIdsAsync(IEnumerable<PomodoroSessionId> ids, CancellationToken cancellationToken = default);
     Task<PomodoroSession?> GetActiveAsync(UserId userId, CancellationToken cancellationToken = default);
